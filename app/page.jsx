@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { 
   Brain, 
   MessageCircle, 
@@ -15,7 +16,10 @@ import {
   TrendingUp,
   BookOpen,
   Headphones,
-  Zap
+  Zap,
+  UserCheck,
+  Calendar,
+  Award
 } from 'lucide-react'
 import ChatBot from "@/app/components/ChatBot/page.jsx"
 import MoodTracker from '@/app/components/MoodTracker/page.jsx'
@@ -26,10 +30,26 @@ import StatsCounter from '@/app/components/StatsCounter/page.jsx'
 
 export default function HomePage() {
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [featuredPsychiatrists, setFeaturedPsychiatrists] = useState([])
+
+  useEffect(() => {
+    // Get top 3 rated psychiatrists
+    const topPsychiatrists = [...psychiatrists]
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 3)
+    setFeaturedPsychiatrists(topPsychiatrists)
+  }, [])
+
+  const resources = [
+    { title: "Anxiety Management", description: "Learn techniques to manage anxiety", icon: "🧘", link: "/resources/anxiety" },
+    { title: "Depression Support", description: "Resources for depression support", icon: "🌞", link: "/resources/depression" },
+    { title: "Mindfulness Exercises", description: "Guided meditation practices", icon: "🌿", link: "/resources/mindfulness" },
+    { title: "Sleep Better", description: "Improve sleep quality", icon: "😴", link: "/resources/sleep" }
+  ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-purple-50">
-      {/* Hero Section */}
+ <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-purple-50">
+      {/* Hero Section - Updated with Psychiatrists */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10" />
         <div className="container mx-auto px-4 py-20 md:py-32 relative">
@@ -37,50 +57,55 @@ export default function HomePage() {
             <div className="space-y-8">
               <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 border border-blue-200">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-gray-700">24/7 AI Support Available</span>
+                <span className="text-sm font-medium text-gray-700">
+                  AI Support + Professional Psychiatrists
+                </span>
               </div>
               
               <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight">
-                Your Personal
+                Complete
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                  Mental Health AI
+                  Mental Health Care
                 </span>
-                Companion
               </h1>
               
-              <p className="text-xl text-gray-600 max-w-2xl">
-                Get instant, personalized mental health support from our advanced AI. 
-                Always available, always understanding, always confidential.
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Get 24/7 AI support and connect with licensed psychiatrists. 
+                Your journey to better mental health starts here.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <button 
                   onClick={() => setIsChatOpen(true)}
-                  className="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
+                  className="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-2xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
                 >
                   <MessageCircle className="w-6 h-6" />
-                  Start Free Chat
+                  Chat with AI
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
                 
-                <button className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-3">
-                  <BookOpen className="w-6 h-6" />
-                  Explore Resources
-                </button>
+                <Link
+                  href="/psychiatrists"
+                  className="group border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-2xl font-semibold text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-3"
+                >
+                  <UserCheck className="w-6 h-6" />
+                  Find Psychiatrists
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </div>
               
               <div className="flex items-center gap-6 text-gray-600">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span>100% Confidential</span>
+                  <span>AI + Human Support</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span>No Sign-up Required</span>
+                  <span>Licensed Professionals</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span>Always Free</span>
+                  <span>Insurance Accepted</span>
                 </div>
               </div>
             </div>
@@ -90,6 +115,7 @@ export default function HomePage() {
                 <div className="absolute -top-4 -right-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-2 rounded-full font-bold text-sm animate-pulse">
                   🤖 AI ONLINE
                 </div>
+
                 
                 <div className="space-y-6">
                   <div className="flex items-center gap-4">
@@ -131,6 +157,43 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+              <div className="relative bg-white rounded-3xl shadow-xl p-6 border border-gray-200">
+                <div className="absolute -top-4 -right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-full font-bold text-sm">
+                  👨‍⚕️ AVAILABLE
+                </div>
+                
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center text-2xl">
+                    👩‍⚕️
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Dr. Sarah Johnson</h3>
+                    <p className="text-sm text-gray-600">Top-rated Psychiatrist</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    <span className="text-gray-700">4.9/5 (128 reviews)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-blue-500" />
+                    <span className="text-gray-700">Depression & Anxiety Specialist</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">Available Tomorrow</span>
+                  </div>
+                </div>
+                
+                <Link
+                  href="/psychiatrists"
+                  className="mt-4 block text-center bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2 rounded-xl font-medium hover:shadow-lg transition"
+                >
+                  Book Appointment
+                </Link>
+              </div>
               
               {/* Floating elements */}
               <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-2xl"></div>
@@ -138,7 +201,82 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        
       </section>
+
+
+      {/* New: Psychiatrists Section */}
+      <section className="py-20 bg-gradient-to-r from-green-50 to-emerald-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Connect with <span className="text-green-600">Licensed Psychiatrists</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Our network of verified mental health professionals is ready to help
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {featuredPsychiatrists.map((psy) => (
+              <div key={psy.id} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center text-3xl">
+                    {psy.image}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg">{psy.name}</h3>
+                    <p className="text-green-600 text-sm">{psy.title}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    <span className="text-gray-700">{psy.rating}/5 ({psy.reviews} reviews)</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {psy.specialization.slice(0, 2).map((spec, idx) => (
+                      <span key={idx} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                        {spec}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-500" />
+                    <span className="text-gray-700">Next: {psy.nextAvailable}</span>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-2xl font-bold text-gray-900">${psy.consultationFee}</div>
+                    <div className="text-sm text-gray-500">per session</div>
+                  </div>
+                  <Link
+                    href={`/psychiatrists/${psy.id}`}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-2 rounded-xl font-medium hover:shadow-lg transition"
+                  >
+                    View Profile
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-center">
+            <Link
+              href="/psychiatrists"
+              className="inline-flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-xl hover:scale-105 transition"
+            >
+              View All Psychiatrists
+              <ChevronRight className="w-5 h-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+
 
       {/* Stats Section */}
       <section className="py-16 bg-white">
@@ -414,6 +552,17 @@ export default function HomePage() {
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
         </div>
       </button>
+
+        {/* Psychiatrist Consultation Button */}
+      <Link
+        href="/psychiatrists"
+        className="fixed bottom-32 right-8 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-2xl shadow-2xl hover:scale-110 transition-transform z-50 group"
+      >
+        <div className="flex items-center gap-3">
+          <UserCheck className="w-6 h-6" />
+          <span className="font-semibold">Find Psychiatrist</span>
+        </div>
+      </Link>
 
       {/* Chat Modal */}
       {isChatOpen && (

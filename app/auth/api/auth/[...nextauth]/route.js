@@ -1,9 +1,7 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-
-// In-memory user store (replace with database in production)
-const users = []
+import { findUserByEmail } from "../users"
 
 export const authOptions = {
   providers: [
@@ -19,7 +17,7 @@ export const authOptions = {
         }
 
         // Find user (in production, query database)
-        const user = users.find(u => u.email === credentials.email)
+        const user = findUserByEmail(credentials.email)
         
         if (!user) {
           throw new Error("No user found with this email")

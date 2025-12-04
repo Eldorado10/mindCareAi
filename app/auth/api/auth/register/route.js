@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-
-// In-memory storage (replace with database in production)
-let users = []
-let userId = 1
+import { getUsers, addUser, findUserByEmail, getNextUserId } from '../users'
 
 export async function POST(request) {
   try {
@@ -25,7 +22,7 @@ export async function POST(request) {
     }
 
     // Check if user already exists
-    if (users.some(u => u.email === email)) {
+    if (findUserByEmail(email)) {
       return NextResponse.json(
         { error: 'User already exists with this email' },
         { status: 400 }
@@ -37,7 +34,7 @@ export async function POST(request) {
 
     // Create user object
     const user = {
-      id: userId++,
+      id: getNextUserId(),
       name,
       email,
       password: hashedPassword,
@@ -47,7 +44,7 @@ export async function POST(request) {
     }
 
     // Store user (in production, save to database)
-    users.push(user)
+    addUser(user)
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user
