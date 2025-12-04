@@ -1,4 +1,6 @@
 import './globals.css'
+import { SessionProvider } from "next-auth/react"
+
 
 export const metadata = {
   title: 'My App',
