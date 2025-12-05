@@ -27,6 +27,7 @@ import TestimonialCard from '@/app/components/TestimonialCard/page.jsx'
 import ResourceCard from '@/app/components/ResourceCard/page.jsx'
 import FeatureCard from  '@/app/components/FeatureCard/page.jsx'
 import StatsCounter from '@/app/components/StatsCounter/page.jsx'
+import { psychiatrists } from '@/app/lib/psychiatrists.js'
 
 export default function HomePage() {
   const [isChatOpen, setIsChatOpen] = useState(false)
