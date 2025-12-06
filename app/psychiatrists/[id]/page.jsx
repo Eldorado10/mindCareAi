@@ -32,8 +32,8 @@ import {
   CreditCard
 } from 'lucide-react'
 import { psychiatrists } from '@/lib/psychiatrists'
-import BookingModal from '@/components/psychiatrists/BookingModal'
-import ReviewCard from '@/components/psychiatrists/ReviewCard'
+import BookingModal from '@/app/psychiatrists/BookingModal.jsx'
+import ReviewCard from '@/app/psychiatrists/reviewCard.jsx'
 
 export default function PsychiatristDetailPage() {
   const params = useParams()

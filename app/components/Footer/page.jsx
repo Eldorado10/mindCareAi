@@ -41,9 +41,8 @@ export default function Footer() {
             <h3 className="text-xl font-bold mb-6">Quick Links</h3>
             <ul className="space-y-4">
               <li><Link href="/" className="text-gray-400 hover:text-white transition">Home</Link></li>
-              <li><Link href="/chat" className="text-gray-400 hover:text-white transition">AI Chat</Link></li>
-              <li><Link href="/tracker" className="text-gray-400 hover:text-white transition">Mood Tracker</Link></li>
-              <li><Link href="/resources" className="text-gray-400 hover:text-white transition">Resources</Link></li>
+              <li><Link href="/chatbot" className="text-gray-400 hover:text-white transition">AI Chat</Link></li>
+              <li><Link href="/psychiatrists" className="text-gray-400 hover:text-white transition">Find a Psychiatrist</Link></li>
               <li><Link href="/about" className="text-gray-400 hover:text-white transition">About Us</Link></li>
               <li><Link href="/contact" className="text-gray-400 hover:text-white transition">Contact</Link></li>
             </ul>
