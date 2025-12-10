@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Search, 
   Filter, 
@@ -16,9 +17,14 @@ import {
 } from 'lucide-react'
 import PsychiatristCard from '../components/psychiatrists/psychiatristsCard'
 import FilterSidebar from '../components/psychiatrists/filterSidebar'
-import { psychiatrists, specializations, insuranceProviders } from '../lib/psychiatrists'
+import { fetchPsychiatrists } from '@/lib/api-client'
 
 export default function PsychiatristsPage() {
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [psychiatrists, setPsychiatrists] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSpecializations, setSelectedSpecializations] = useState([])
   const [selectedLanguages, setSelectedLanguages] = useState([])
@@ -26,22 +32,53 @@ export default function PsychiatristsPage() {
   const [acceptsInsurance, setAcceptsInsurance] = useState(false)
   const [availableToday, setAvailableToday] = useState(false)
   const [sortBy, setSortBy] = useState('rating')
-  const [filteredPsychiatrists, setFilteredPsychiatrists] = useState(psychiatrists)
+  const [filteredPsychiatrists, setFilteredPsychiatrists] = useState([])
 
-  // Get all unique languages
-  const allLanguages = [...new Set(psychiatrists.flatMap(p => p.languages))]
+  // Check authentication on mount
+  useEffect(() => {
+    const user = localStorage.getItem('user')
+    if (!user) {
+      router.push('/auth/signin')
+      return
+    }
+    setIsAuthenticated(true)
+    setAuthLoading(false)
+  }, [router])
+
+  // Fetch psychiatrists from API
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    async function loadPsychiatrists() {
+      try {
+        setLoading(true)
+        const data = await fetchPsychiatrists()
+        setPsychiatrists(data || [])
+      } catch (error) {
+        console.error('Error loading psychiatrists:', error)
+        setPsychiatrists([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadPsychiatrists()
+  }, [isAuthenticated])
+
+  // Get all unique languages (or use defaults)
+  const allLanguages = [...new Set((psychiatrists || []).flatMap(p => p.languages || ['English']))]
+  const specializations = [...new Set((psychiatrists || []).map(p => p.specialization))]
 
   useEffect(() => {
-    let results = psychiatrists
+    let results = psychiatrists || []
 
     // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       results = results.filter(psy => 
         psy.name.toLowerCase().includes(query) ||
-        psy.specialization.some(s => s.toLowerCase().includes(query)) ||
-        psy.approach.toLowerCase().includes(query) ||
-        psy.bio.toLowerCase().includes(query)
+        (typeof psy.specialization === 'string' ? 
+          psy.specialization.toLowerCase().includes(query) : 
+          psy.specialization?.some(s => s.toLowerCase().includes(query)))
       )
     }
 
@@ -49,17 +86,12 @@ export default function PsychiatristsPage() {
     if (selectedSpecializations.length > 0) {
       results = results.filter(psy =>
         selectedSpecializations.some(spec => 
-          psy.specialization.some(psySpec => 
-            psySpec.toLowerCase().includes(spec.toLowerCase())
-          )
+          (typeof psy.specialization === 'string' ? 
+            psy.specialization.toLowerCase().includes(spec.toLowerCase()) :
+            psy.specialization?.some(psySpec => 
+              psySpec.toLowerCase().includes(spec.toLowerCase())
+            ))
         )
-      )
-    }
-
-    // Apply language filter
-    if (selectedLanguages.length > 0) {
-      results = results.filter(psy =>
-        selectedLanguages.some(lang => psy.languages.includes(lang))
       )
     }
 
@@ -69,26 +101,13 @@ export default function PsychiatristsPage() {
       psy.consultationFee <= priceRange[1]
     )
 
-    // Apply insurance filter
-    if (acceptsInsurance) {
-      results = results.filter(psy => psy.acceptsInsurance)
-    }
-
-    // Apply availability filter
-    if (availableToday) {
-      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
-      results = results.filter(psy => 
-        psy.availability[today] && psy.availability[today].length > 0
-      )
-    }
-
     // Apply sorting
     results = [...results].sort((a, b) => {
       switch (sortBy) {
         case 'rating':
           return b.rating - a.rating
         case 'experience':
-          return parseInt(b.experience) - parseInt(a.experience)
+          return (b.experience || 0) - (a.experience || 0)
         case 'price-low':
           return a.consultationFee - b.consultationFee
         case 'price-high':
@@ -101,7 +120,7 @@ export default function PsychiatristsPage() {
     })
 
     setFilteredPsychiatrists(results)
-  }, [searchQuery, selectedSpecializations, selectedLanguages, priceRange, acceptsInsurance, availableToday, sortBy])
+  }, [searchQuery, selectedSpecializations, priceRange, sortBy, psychiatrists])
 
   const clearFilters = () => {
     setSearchQuery('')
@@ -111,6 +130,21 @@ export default function PsychiatristsPage() {
     setAcceptsInsurance(false)
     setAvailableToday(false)
     setSortBy('rating')
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verifying authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null
   }
 
   return (
@@ -142,6 +176,16 @@ export default function PsychiatristsPage() {
         </div>
       </div>
 
+      {/* Stats Bar */}
+      {loading ? (
+        <div className="container mx-auto px-4 py-20 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <p className="text-gray-600">Loading psychiatrists...</p>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Stats Bar */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4">
@@ -286,6 +330,8 @@ export default function PsychiatristsPage() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

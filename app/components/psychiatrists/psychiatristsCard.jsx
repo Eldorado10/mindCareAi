@@ -1,3 +1,5 @@
+ 'use client'
+
 import { 
   Star, 
   Clock, 
@@ -10,8 +12,29 @@ import {
   Video
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useCallback } from 'react'
 
 export default function PsychiatristCard({ psychiatrist }) {
+  const router = useRouter()
+
+  const handleBook = useCallback((e) => {
+    e.preventDefault()
+    try {
+      const user = typeof window !== 'undefined' && localStorage.getItem('user')
+      if (!user) {
+        // redirect to signin with return url
+        router.push(`/auth/signin?redirect=/psychiatrists/${psychiatrist.id}`)
+        return
+      }
+      // user is logged in -> go to psychiatrist profile where booking can continue
+      router.push(`/psychiatrists/${psychiatrist.id}`)
+    } catch (err) {
+      console.error('Booking navigation error', err)
+      router.push('/auth/signin')
+    }
+  }, [psychiatrist.id, router])
+
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
       {/* Header with online status */}
@@ -51,14 +74,20 @@ export default function PsychiatristCard({ psychiatrist }) {
       {/* Specializations */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex flex-wrap gap-2">
-          {psychiatrist.specialization.map((spec, index) => (
-            <span
-              key={index}
-              className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
-            >
-              {spec}
-            </span>
-          ))}
+          {Array.isArray(psychiatrist.specialization) 
+            ? psychiatrist.specialization.map((spec, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
+                >
+                  {spec}
+                </span>
+              ))
+            : (
+                <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                  {psychiatrist.specialization}
+                </span>
+              )}
         </div>
       </div>
 
@@ -73,7 +102,9 @@ export default function PsychiatristCard({ psychiatrist }) {
             <div>
               <div className="text-sm text-gray-500">Languages</div>
               <div className="font-medium text-gray-900">
-                {psychiatrist.languages.join(', ')}
+                {Array.isArray(psychiatrist.languages) 
+                  ? psychiatrist.languages.join(', ')
+                  : psychiatrist.languages || 'English'}
               </div>
             </div>
           </div>

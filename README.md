@@ -259,6 +259,8 @@ Deployment Guide
 
 Security Guidelines
 
+[Authentication Implementation](./AUTHENTICATION_IMPLEMENTATION.md)
+
 Contributing Guide
 
 
