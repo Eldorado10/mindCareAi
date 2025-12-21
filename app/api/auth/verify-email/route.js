@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/database.js'
-import User from '@/lib/models/User.js'
+import getUser from '@/lib/models/User.js'
 
 export async function GET(request) {
   try {
@@ -25,6 +25,7 @@ export async function GET(request) {
     await sequelize.authenticate()
     
     // Find user by verification token
+    const User = getUser()
     const user = await User.findOne({
       where: {
         verificationToken: token

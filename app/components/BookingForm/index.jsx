@@ -2,31 +2,124 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBooking } from '@/lib/api-client'
+import { createBooking, fetchUserProfile } from '@/lib/api-client'
 import { Calendar, Clock, User, Mail, Phone, CheckCircle, AlertCircle, LogIn } from 'lucide-react'
 
-export default function BookingForm({ psychiatristId, psychiatristName }) {
+export default function BookingForm({
+  psychiatristId,
+  psychiatristName,
+  bookingType = 'video',
+  initialDate = '',
+  initialTimeSlot = '10:00 AM',
+  onDateChange,
+  onTimeChange
+}) {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
   const [formData, setFormData] = useState({
     userName: '',
     userEmail: '',
     phoneNumber: '',
-    bookingDate: '',
-    timeSlot: '10:00 AM',
+    bookingDate: initialDate,
+    timeSlot: initialTimeSlot,
     notes: '',
   })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const minBookingDate = (() => {
+    const today = new Date()
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset())
+    return today.toISOString().split('T')[0]
+  })()
 
   // Check authentication on mount
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      setAuthLoading(false)
+      return
+    }
+    
     const user = localStorage.getItem('user')
-    setIsAuthenticated(!!user)
+    if (!user) {
+      setIsAuthenticated(false)
+      setAuthLoading(false)
+      return
+    }
+
+    let parsedUser = null
+    try {
+      parsedUser = JSON.parse(user)
+    } catch (error) {
+      console.error('Error parsing user data:', error)
+      setIsAuthenticated(false)
+      setAuthLoading(false)
+      return
+    }
+
+    setIsAuthenticated(true)
     setAuthLoading(false)
+
+    const fallbackName = [parsedUser.firstName, parsedUser.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+
+    setFormData((prev) => ({
+      ...prev,
+      userName: prev.userName || fallbackName,
+      userEmail: prev.userEmail || parsedUser.email || '',
+      phoneNumber: prev.phoneNumber || parsedUser.phone || '',
+    }))
+
+    const userId = parsedUser.id
+    const userEmail = parsedUser.email
+
+    if (!userId && !userEmail) return
+
+    let isActive = true
+    const loadProfile = async () => {
+      setProfileLoading(true)
+      const profile = await fetchUserProfile({ id: userId, email: userEmail })
+      if (!isActive) return
+      if (profile) {
+        const fullName = [profile.firstName, profile.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim()
+        setFormData((prev) => ({
+          ...prev,
+          userName: prev.userName || fullName,
+          userEmail: prev.userEmail || profile.email || userEmail || '',
+          phoneNumber: prev.phoneNumber || profile.phone || '',
+        }))
+      }
+      setProfileLoading(false)
+    }
+
+    loadProfile()
+
+    return () => {
+      isActive = false
+    }
   }, [])
+
+  useEffect(() => {
+    setFormData((prev) => {
+      const nextDate = initialDate ?? ''
+      const nextTime = initialTimeSlot ?? '10:00 AM'
+      if (prev.bookingDate === nextDate && prev.timeSlot === nextTime) {
+        return prev
+      }
+      return {
+        ...prev,
+        bookingDate: nextDate,
+        timeSlot: nextTime,
+      }
+    })
+  }, [initialDate, initialTimeSlot])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -34,6 +127,12 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
       ...prev,
       [name]: value
     }))
+    if (name === 'bookingDate') {
+      onDateChange?.(value)
+    }
+    if (name === 'timeSlot') {
+      onTimeChange?.(value)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -51,12 +150,10 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
 
       const booking = await createBooking({
         psychiatristId,
-        userName: formData.userName,
         userEmail: formData.userEmail,
         phoneNumber: formData.phoneNumber,
         bookingDate: new Date(formData.bookingDate).toISOString(),
         timeSlot: formData.timeSlot,
-        notes: formData.notes,
         status: 'pending'
       })
 
@@ -66,15 +163,17 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
           userName: '',
           userEmail: '',
           phoneNumber: '',
-          bookingDate: '',
-          timeSlot: '10:00 AM',
+          bookingDate: initialDate,
+          timeSlot: initialTimeSlot,
           notes: '',
         })
+        onDateChange?.(initialDate)
+        onTimeChange?.(initialTimeSlot)
         // Reset success message after 5 seconds
         setTimeout(() => setSuccess(false), 5000)
       }
     } catch (err) {
-      setError('Failed to create booking. Please try again.')
+      setError(err?.message || 'Failed to create booking. Please try again.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -120,9 +219,17 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-lg">
-      <h3 className="text-2xl font-bold text-gray-900 mb-6">Book an Appointment</h3>
-      <p className="text-gray-600 mb-6">with <span className="font-semibold text-blue-600">{psychiatristName}</span></p>
+    <div className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-lg text-neutral-800">
+      <h3 className="text-2xl font-bold text-neutral-900 mb-2">Book an Appointment</h3>
+      <p className="text-sm text-neutral-500 mb-6">
+        with <span className="font-semibold text-primary">{psychiatristName}</span>
+      </p>
+
+      {profileLoading && (
+        <div className="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+          Loading your saved details...
+        </div>
+      )}
 
       {success && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
@@ -147,7 +254,7 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Name */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-neutral-800 mb-2">
             <div className="flex items-center gap-2">
               <User className="w-4 h-4" />
               Full Name *
@@ -159,14 +266,14 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
             value={formData.userName}
             onChange={handleChange}
             placeholder="John Doe"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-neutral-300 rounded-xl bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60"
             required
           />
         </div>
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-neutral-800 mb-2">
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Email *
@@ -178,14 +285,14 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
             value={formData.userEmail}
             onChange={handleChange}
             placeholder="john@example.com"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-neutral-300 rounded-xl bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60"
             required
           />
         </div>
 
         {/* Phone */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-neutral-800 mb-2">
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4" />
               Phone Number
@@ -197,13 +304,13 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
             value={formData.phoneNumber}
             onChange={handleChange}
             placeholder="+1 (555) 000-0000"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-neutral-300 rounded-xl bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60"
           />
         </div>
 
         {/* Date */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-neutral-800 mb-2">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Preferred Date *
@@ -214,15 +321,15 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
             name="bookingDate"
             value={formData.bookingDate}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-neutral-300 rounded-xl bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60"
             required
-            min={new Date().toISOString().split('T')[0]}
+            min={minBookingDate}
           />
         </div>
 
         {/* Time Slot */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-neutral-800 mb-2">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
               Preferred Time
@@ -232,7 +339,7 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
             name="timeSlot"
             value={formData.timeSlot}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-neutral-300 rounded-xl bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60"
           >
             <option value="9:00 AM">9:00 AM</option>
             <option value="10:00 AM">10:00 AM</option>
@@ -248,7 +355,7 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-neutral-800 mb-2">
             Additional Notes
           </label>
           <textarea
@@ -257,7 +364,7 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
             onChange={handleChange}
             placeholder="Tell us about your concerns or questions..."
             rows={4}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-neutral-300 rounded-xl bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60"
           />
         </div>
 
@@ -265,7 +372,7 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -280,7 +387,7 @@ export default function BookingForm({ psychiatristId, psychiatristName }) {
           )}
         </button>
 
-        <p className="text-gray-600 text-sm text-center">
+        <p className="text-neutral-500 text-sm text-center">
           We'll send a confirmation email with appointment details
         </p>
       </form>

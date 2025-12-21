@@ -3,14 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { register } from '@/lib/api-client';
-import { User, Mail, Lock, Phone, BookOpen, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-
-const roles = [
-  { value: 'patient', label: '👤 Patient/User', description: 'Access mental health support' },
-  { value: 'researcher', label: '🔬 Researcher', description: 'Research mental health data' },
-  { value: 'data-scientist', label: '📊 Data Scientist', description: 'Analyze health analytics' },
-  { value: 'admin', label: '⚙️ Admin', description: 'Manage platform & users' },
-];
+import Toast from '@/app/components/Admin/Toast';
+import { User, Mail, Lock, Phone, AlertCircle, CheckCircle, Loader, Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -20,14 +14,23 @@ export default function RegisterForm() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'patient',
     phone: '',
-    specialization: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [toast, setToast] = useState(null);
+  const inputBase = 'w-full rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-neutral-900 shadow-sm placeholder:text-neutral-400 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition disabled:cursor-not-allowed disabled:opacity-60';
+  const inputWithIcon = `${inputBase} pl-11`;
+  const inputWithIconAction = `${inputBase} pl-11 pr-12`;
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3200);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,9 +63,6 @@ export default function RegisterForm() {
       if (formData.password !== formData.confirmPassword) {
         throw new Error('Passwords do not match');
       }
-      if (['researcher', 'data-scientist'].includes(formData.role) && !formData.specialization.trim()) {
-        throw new Error('Specialization is required for this role');
-      }
 
       // Register user
       const userData = {
@@ -70,22 +70,19 @@ export default function RegisterForm() {
         lastName: formData.lastName.trim(),
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
-        role: formData.role,
         phone: formData.phone || null,
-        specialization: formData.specialization || null,
       };
 
       await register(userData);
       setSuccess(true);
+      showToast('Thanks For Trusting MindCare AI. Now please Sign In', 'success');
       setFormData({
         firstName: '',
         lastName: '',
         email: '',
         password: '',
         confirmPassword: '',
-        role: 'patient',
         phone: '',
-        specialization: '',
       });
 
       setTimeout(() => {
@@ -99,183 +96,221 @@ export default function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* Alert Messages */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <p className="text-red-700">{error}</p>
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50/80 p-4 text-sm text-red-700 shadow-sm">
+          <div className="flex gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p>{error}</p>
+          </div>
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-green-700">Registration successful! Redirecting...</p>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-700 shadow-sm">
+          <div className="flex gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <p className="font-semibold text-emerald-900">Registration successful! Redirecting...</p>
+          </div>
         </div>
       )}
 
       {/* Name Fields */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-            First Name *
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="firstName" className="block text-sm font-semibold text-neutral-800">
+            First name *
           </label>
-          <input
-            type="text"
-            id="firstName"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="John"
-            disabled={loading}
-          />
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              id="firstName"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleChange}
+              className={inputWithIcon}
+              placeholder="John"
+              autoComplete="given-name"
+              disabled={loading}
+              required
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-            Last Name *
+        <div className="space-y-2">
+          <label htmlFor="lastName" className="block text-sm font-semibold text-neutral-800">
+            Last name *
           </label>
-          <input
-            type="text"
-            id="lastName"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Doe"
-            disabled={loading}
-          />
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              id="lastName"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              className={inputWithIcon}
+              placeholder="Doe"
+              autoComplete="family-name"
+              disabled={loading}
+              required
+            />
+          </div>
         </div>
       </div>
 
       {/* Email */}
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-          <Mail className="w-4 h-4" /> Email *
+      <div className="space-y-2">
+        <label htmlFor="email" className="block text-sm font-semibold text-neutral-800">
+          Email *
         </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="john@example.com"
-          disabled={loading}
-        />
-      </div>
-
-      {/* Role Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">Role *</label>
-        <div className="space-y-2">
-          {roles.map((role) => (
-            <label key={role.value} className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors">
-              <input
-                type="radio"
-                name="role"
-                value={role.value}
-                checked={formData.role === role.value}
-                onChange={handleChange}
-                className="w-4 h-4 text-blue-600"
-                disabled={loading}
-              />
-              <div className="ml-3 flex-1">
-                <p className="font-medium text-gray-900">{role.label}</p>
-                <p className="text-sm text-gray-600">{role.description}</p>
-              </div>
-            </label>
-          ))}
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className={inputWithIcon}
+            placeholder="john@example.com"
+            autoComplete="email"
+            disabled={loading}
+            required
+          />
         </div>
       </div>
 
-      {/* Specialization (for researcher/data-scientist) */}
-      {(formData.role === 'researcher' || formData.role === 'data-scientist') && (
-        <div>
-          <label htmlFor="specialization" className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <BookOpen className="w-4 h-4" /> Specialization *
-          </label>
+      {/* Phone (optional) */}
+      <div className="space-y-2">
+        <label htmlFor="phone" className="block text-sm font-semibold text-neutral-800">
+          Phone (optional)
+        </label>
+        <div className="relative">
+          <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
           <input
-            type="text"
-            id="specialization"
-            name="specialization"
-            value={formData.specialization}
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Psychology, Neuroscience, Mental Health Analytics"
+            className={inputWithIcon}
+            placeholder="+1 (555) 123-4567"
+            autoComplete="tel"
             disabled={loading}
           />
         </div>
-      )}
-
-      {/* Phone (optional) */}
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-          <Phone className="w-4 h-4" /> Phone (Optional)
-        </label>
-        <input
-          type="tel"
-          id="phone"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="+1 (555) 123-4567"
-          disabled={loading}
-        />
       </div>
 
       {/* Password Fields */}
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-          <Lock className="w-4 h-4" /> Password *
+      <div className="space-y-2">
+        <label htmlFor="password" className="block text-sm font-semibold text-neutral-800">
+          Password *
         </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="At least 6 characters"
-          disabled={loading}
-        />
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <input
+            type={showPassword ? 'text' : 'password'}
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className={inputWithIconAction}
+            placeholder="At least 6 characters"
+            autoComplete="new-password"
+            aria-describedby="password-hint"
+            minLength={6}
+            disabled={loading}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition"
+            disabled={loading}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+          >
+            {showPassword ? (
+              <>
+                <EyeOff className="h-4 w-4" /> Hide
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4" /> Show
+              </>
+            )}
+          </button>
+        </div>
+        <p id="password-hint" className="text-xs text-neutral-500">Use at least 6 characters.</p>
       </div>
 
-      <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-          <Lock className="w-4 h-4" /> Confirm Password *
+      <div className="space-y-2">
+        <label htmlFor="confirmPassword" className="block text-sm font-semibold text-neutral-800">
+          Confirm password *
         </label>
-        <input
-          type="password"
-          id="confirmPassword"
-          name="confirmPassword"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Confirm your password"
-          disabled={loading}
-        />
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <input
+            type={showConfirmPassword ? 'text' : 'password'}
+            id="confirmPassword"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            className={inputWithIconAction}
+            placeholder="Confirm your password"
+            autoComplete="new-password"
+            disabled={loading}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition"
+            disabled={loading}
+            aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+          >
+            {showConfirmPassword ? (
+              <>
+                <EyeOff className="h-4 w-4" /> Hide
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4" /> Show
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Submit Button */}
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-primary to-secondary px-4 py-3 text-white font-semibold shadow-soft-2 transition hover:shadow-soft-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? (
-          <>
-            <Loader className="w-4 h-4 animate-spin" />
-            Creating Account...
-          </>
-        ) : (
-          <>
-            <User className="w-4 h-4" />
-            Create Account
-          </>
-        )}
+        <span className="relative z-10 flex items-center justify-center gap-2">
+          {loading ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            <>
+              <User className="w-4 h-4" />
+              Create Account
+            </>
+          )}
+        </span>
+        <span className="pointer-events-none absolute inset-0 bg-white/10 opacity-0 transition group-hover:opacity-100"></span>
       </button>
     </form>
   );

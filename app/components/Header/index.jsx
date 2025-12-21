@@ -8,7 +8,8 @@ import {
   Menu, 
   X,
   LogOut,
-  User
+  User,
+  LogIn
 } from 'lucide-react'
 
 export default function Header() {
@@ -41,6 +42,7 @@ export default function Header() {
     { label: 'Psychiatrists', href: '/psychiatrists' },
     { label: 'Resources', href: '/resources' },
     { label: 'ChatBot', href: '/chatbot' },
+    { label: 'Dashboard', href: '/dashboard' },
   ]
 
   return (
@@ -84,6 +86,7 @@ export default function Header() {
                     {user.firstName} {user.lastName}
                   </span>
                 </div>
+                
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium transition"
@@ -96,15 +99,10 @@ export default function Header() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/auth/signin"
-                  className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-medium"
                 >
+                  <LogIn className="w-5 h-5" />
                   Sign In
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-medium"
-                >
-                  Sign Up
                 </Link>
               </div>
             )}
@@ -153,6 +151,13 @@ export default function Header() {
                         </p>
                       </div>
                     </div>
+                    <Link
+                      href="/dashboard"
+                      className="w-full flex items-center justify-center px-4 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
                     <button
                       onClick={() => {
                         handleLogout()
@@ -168,17 +173,11 @@ export default function Header() {
                   <>
                     <Link
                       href="/auth/signin"
-                      className="block w-full text-center px-4 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-medium transition"
                       onClick={() => setIsMenuOpen(false)}
                     >
+                      <LogIn className="w-5 h-5" />
                       Sign In
-                    </Link>
-                    <Link
-                      href="/auth/signup"
-                      className="block w-full text-center px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-medium transition"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Sign Up
                     </Link>
                   </>
                 )}

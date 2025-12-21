@@ -1,14 +1,27 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import ResourceCard from '@/app/components/ResourceCard'
 import { fetchResources } from '@/lib/api-client'
 
 export default function ResourcesPage() {
+  const router = useRouter()
   const [resources, setResources] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
+    // Check authentication first
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user')
+      if (!storedUser) {
+        router.replace('/auth/signin')
+        return
+      }
+      setIsAuthenticated(true)
+    }
+
     async function loadResources() {
       try {
         setLoading(true)
@@ -45,7 +58,19 @@ export default function ResourcesPage() {
       }
     }
     loadResources()
-  }, [])
+  }, [router])
+
+  // Show loading while checking authentication
+  if (!isAuthenticated && typeof window !== 'undefined') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-purple-50">

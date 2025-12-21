@@ -1,32 +1,40 @@
 import { getDatabase } from '@/lib/database.js';
-import Psychiatrist from '@/lib/models/Psychiatrist.js';
+import getPsychiatrist from '@/lib/models/Psychiatrist.js';
 
 export async function GET(request) {
   try {
     const sequelize = getDatabase();
     if (!sequelize) {
-      console.error('[API] getDatabase() returned null');
-      return Response.json({ error: 'Database not initialized', debug: 'getDatabase() returned null' }, { status: 503 });
+      return Response.json({ error: 'Database not initialized' }, { status: 503 });
     }
     
-    await sequelize.authenticate();
-    
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
+    const Psychiatrist = getPsychiatrist();
+    if (!Psychiatrist) {
+      return Response.json({ error: 'Psychiatrist model unavailable' }, { status: 503 });
+    }
+
+    const attributes = { attributes: { exclude: ['imageUrl'] } };
+
     if (id) {
-      const psychiatrist = await Psychiatrist.findByPk(id);
+      const psychiatrist = await Psychiatrist.findByPk(id, attributes);
       if (!psychiatrist) {
         return Response.json({ error: 'Psychiatrist not found' }, { status: 404 });
       }
       return Response.json(psychiatrist);
     }
 
-    const psychiatrists = await Psychiatrist.findAll();
+    const psychiatrists = await Psychiatrist.findAll(attributes);
     return Response.json(psychiatrists);
   } catch (error) {
-    console.error('[API] GET Error:', error);
-    return Response.json({ error: error.message, debug: error.toString() }, { status: 500 });
+    console.error('[API] Psychiatrists GET Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -37,14 +45,21 @@ export async function POST(request) {
       return Response.json({ error: 'Database not initialized' }, { status: 503 });
     }
     
-    await sequelize.authenticate();
-    
+
+    const Psychiatrist = getPsychiatrist();
+    if (!Psychiatrist) {
+      return Response.json({ error: 'Psychiatrist model unavailable' }, { status: 503 });
+    }
+
     const data = await request.json();
     const psychiatrist = await Psychiatrist.create(data);
     return Response.json(psychiatrist, { status: 201 });
   } catch (error) {
-    console.error('[API] POST Error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[API] Psychiatrists POST Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -55,12 +70,20 @@ export async function PUT(request) {
       return Response.json({ error: 'Database not initialized' }, { status: 503 });
     }
     
-    await sequelize.authenticate();
-    
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const data = await request.json();
 
+    if (!id) {
+      return Response.json({ error: 'Psychiatrist ID is required' }, { status: 400 });
+    }
+
+    const Psychiatrist = getPsychiatrist();
+    if (!Psychiatrist) {
+      return Response.json({ error: 'Psychiatrist model unavailable' }, { status: 503 });
+    }
+
+    const data = await request.json();
     const psychiatrist = await Psychiatrist.findByPk(id);
     if (!psychiatrist) {
       return Response.json({ error: 'Psychiatrist not found' }, { status: 404 });
@@ -69,8 +92,11 @@ export async function PUT(request) {
     await psychiatrist.update(data);
     return Response.json(psychiatrist);
   } catch (error) {
-    console.error('[API] PUT Error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[API] Psychiatrists PUT Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -81,10 +107,18 @@ export async function DELETE(request) {
       return Response.json({ error: 'Database not initialized' }, { status: 503 });
     }
     
-    await sequelize.authenticate();
-    
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+
+    if (!id) {
+      return Response.json({ error: 'Psychiatrist ID is required' }, { status: 400 });
+    }
+
+    const Psychiatrist = getPsychiatrist();
+    if (!Psychiatrist) {
+      return Response.json({ error: 'Psychiatrist model unavailable' }, { status: 503 });
+    }
 
     const psychiatrist = await Psychiatrist.findByPk(id);
     if (!psychiatrist) {
@@ -92,9 +126,12 @@ export async function DELETE(request) {
     }
 
     await psychiatrist.destroy();
-    return Response.json({ message: 'Psychiatrist deleted' });
+    return Response.json({ message: 'Psychiatrist deleted successfully' });
   } catch (error) {
-    console.error('[API] DELETE Error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[API] Psychiatrists DELETE Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }

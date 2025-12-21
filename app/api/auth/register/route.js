@@ -1,5 +1,5 @@
 import { getDatabase } from '@/lib/database.js';
-import User from '@/lib/models/User.js';
+import getUser from '@/lib/models/User.js';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
@@ -29,6 +29,9 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    // Get User model
+    const User = getUser();
 
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });

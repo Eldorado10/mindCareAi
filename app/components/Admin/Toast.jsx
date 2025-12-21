@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, X } from 'lucide-react';
 
 export default function Toast({ message, type = 'success', onClose }) {
   const colors = {
@@ -16,14 +16,17 @@ export default function Toast({ message, type = 'success', onClose }) {
   };
 
   return (
-    <div className={`fixed top-4 right-4 flex items-center gap-3 px-4 py-3 border rounded-md ${colors[type]} z-50 animate-slide-in`}>
+    <div
+      className={`fixed top-4 right-4 flex items-center gap-3 px-4 py-3 border rounded-md ${colors[type]} z-50 animate-slide-in`}
+    >
       {icons[type]}
       <span className="text-sm font-medium">{message}</span>
       <button
         onClick={onClose}
-        className="ml-2 text-lg font-bold opacity-70 hover:opacity-100 transition"
+        aria-label="Close notification"
+        className="ml-2 opacity-70 hover:opacity-100 transition"
       >
-        ×
+        <X size={16} />
       </button>
     </div>
   );

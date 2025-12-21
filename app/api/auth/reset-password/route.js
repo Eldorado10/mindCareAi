@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/database.js'
-import User from '@/lib/models/User.js'
+import getUser from '@/lib/models/User.js'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request) {
@@ -32,6 +32,7 @@ export async function POST(request) {
     await sequelize.authenticate()
     
     // Find user by reset token
+    const User = getUser()
     const user = await User.findOne({
       where: {
         resetToken: token,

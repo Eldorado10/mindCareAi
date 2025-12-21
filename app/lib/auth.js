@@ -3,7 +3,7 @@ import GoogleProvider from "next-auth/providers/google"
 import GitHubProvider from "next-auth/providers/github"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { getDatabase } from '@/lib/database.js'
-import User from '@/lib/models/User.js'
+import getUser from '@/lib/models/User.js'
 import bcrypt from 'bcryptjs'
 
 // Rate limiting store
@@ -31,6 +31,10 @@ export const authOptions = {
         try {
           const { email, password } = credentials
           
+          if (!email || !password) {
+            throw new Error('Email and password are required')
+          }
+          
           // Rate limiting check
           const now = Date.now()
           const attemptData = loginAttempts.get(email) || { count: 0, lockUntil: 0 }
@@ -44,10 +48,28 @@ export const authOptions = {
           if (!sequelize) {
             throw new Error('Database not available')
           }
-          await sequelize.authenticate()
+          
+          try {
+            await sequelize.authenticate()
+          } catch (dbError) {
+            throw new Error('Database connection failed')
+          }
+          
+          // Get User model at runtime
+          const User = getUser()
+          if (!User) {
+            throw new Error('User model unavailable')
+          }
           
           // Find user
-          const user = await User.findOne({ where: { email } })
+          let user
+          try {
+            user = await User.findOne({ where: { email } })
+          } catch (queryError) {
+            console.error('Database query error:', queryError)
+            throw new Error('Failed to authenticate user')
+          }
+          
           if (!user) {
             // Increment failed attempts for non-existent users too
             loginAttempts.set(email, { 
@@ -59,16 +81,23 @@ export const authOptions = {
           
           // Check if user is active
           if (!user.isActive) {
-            throw new Error('Account is disabled')
+            throw new Error('Account is disabled. Please contact support.')
           }
           
           // Check if email is verified (for credentials provider only)
           if (!user.emailVerified) {
-            throw new Error('Please verify your email address before signing in. Check your email for the verification link.')
+            throw new Error('Please verify your email address before signing in.')
           }
           
           // Verify password
-          const isPasswordValid = await bcrypt.compare(password, user.password)
+          let isPasswordValid = false
+          try {
+            isPasswordValid = await bcrypt.compare(password, user.password)
+          } catch (bcryptError) {
+            console.error('Password comparison error:', bcryptError)
+            throw new Error('Failed to verify password')
+          }
+          
           if (!isPasswordValid) {
             // Increment failed attempts
             const newCount = attemptData.count + 1
@@ -82,53 +111,59 @@ export const authOptions = {
           loginAttempts.delete(email)
           
           // Update last login
-          await user.update({ lastLogin: new Date() })
+          try {
+            await user.update({ lastLogin: new Date() })
+          } catch (updateError) {
+            console.error('Failed to update last login:', updateError)
+            // Don't fail login if we can't update lastLogin
+          }
           
           // Return user object without password
           return {
             id: user.id.toString(),
             email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
             name: `${user.firstName} ${user.lastName}`,
-            role: user.role,
+            role: user.role || 'patient',
             image: null
           }
         } catch (error) {
-          throw new Error(error.message)
+          console.error('Authorization error:', error.message)
+          throw new Error(error.message || 'Authentication failed')
         }
       }
     })
   ],
   
-  // NO JWT - Using database session strategy
+  // JWT session strategy (no database adapter needed)
   session: {
-    strategy: "database", // Database sessions instead of JWT
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // Update session daily
   },
   
   // Custom callbacks - enhanced user data
   callbacks: {
-    async session({ session, token, user }) {
-      // Add user ID and role to session
-      if (session?.user) {
-        session.user.id = token.sub || user?.id || session.user.email
-        session.user.role = token.role || user?.role || 'patient'
-        
-        // Add additional user data for database sessions
-        if (token.dbUser) {
-          session.user.firstName = token.dbUser.firstName
-          session.user.lastName = token.dbUser.lastName
-          session.user.role = token.dbUser.role
-        }
+    async session({ session, token }) {
+      // Add user data from JWT token to session
+      if (session?.user && token) {
+        session.user.id = token.sub || token.id
+        session.user.role = token.role || 'patient'
+        session.user.firstName = token.firstName
+        session.user.lastName = token.lastName
       }
       return session
     },
     
-    async jwt({ token, user, account, profile }) {
-      // Add user role to JWT token for credentials provider
+    async jwt({ token, user }) {
+      // Add user data to JWT token when user first signs in
       if (user) {
-        token.role = user.role
-        token.dbUser = user
+        token.id = user.id
+        token.role = user.role || 'patient'
+        token.firstName = user.firstName
+        token.lastName = user.lastName
+        token.email = user.email
       }
       return token
     },
@@ -197,4 +232,4 @@ export const authOptions = {
 }
 
 const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+export { handler }

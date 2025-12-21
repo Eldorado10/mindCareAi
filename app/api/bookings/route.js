@@ -1,6 +1,6 @@
 import { getDatabase } from '@/lib/database.js';
-import Booking from '@/lib/models/Booking.js';
-import Psychiatrist from '@/lib/models/Psychiatrist.js';
+import getBooking from '@/lib/models/Booking.js';
+import getPsychiatrist from '@/lib/models/Psychiatrist.js';
 
 export async function GET(request) {
   try {
@@ -14,6 +14,13 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const userEmail = searchParams.get('userEmail');
+
+    const Booking = getBooking();
+    const Psychiatrist = getPsychiatrist();
+
+    if (!Booking || !Psychiatrist) {
+      return Response.json({ error: 'Models unavailable' }, { status: 503 });
+    }
 
     if (id) {
       const booking = await Booking.findByPk(id);
@@ -72,8 +79,11 @@ export async function GET(request) {
     
     return Response.json(bookingsWithPsych);
   } catch (error) {
-    console.error('[API] GET Error:', error);
-    return Response.json({ error: error.message, debug: error.toString() }, { status: 500 });
+    console.error('[API] Bookings GET Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -86,6 +96,13 @@ export async function POST(request) {
     
     await sequelize.authenticate();
     
+    const Booking = getBooking();
+    const Psychiatrist = getPsychiatrist();
+
+    if (!Booking || !Psychiatrist) {
+      return Response.json({ error: 'Models unavailable' }, { status: 503 });
+    }
+
     const data = await request.json();
     const booking = await Booking.create(data);
     
@@ -100,8 +117,11 @@ export async function POST(request) {
     
     return Response.json(booking, { status: 201 });
   } catch (error) {
-    console.error('[API] POST Error:', error);
-    return Response.json({ error: error.message, debug: error.toString() }, { status: 500 });
+    console.error('[API] Bookings POST Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -116,8 +136,19 @@ export async function PUT(request) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const data = await request.json();
 
+    if (!id) {
+      return Response.json({ error: 'Booking ID is required' }, { status: 400 });
+    }
+
+    const Booking = getBooking();
+    const Psychiatrist = getPsychiatrist();
+
+    if (!Booking || !Psychiatrist) {
+      return Response.json({ error: 'Models unavailable' }, { status: 503 });
+    }
+
+    const data = await request.json();
     const booking = await Booking.findByPk(id);
     if (!booking) {
       return Response.json({ error: 'Booking not found' }, { status: 404 });
@@ -136,8 +167,11 @@ export async function PUT(request) {
     
     return Response.json(booking);
   } catch (error) {
-    console.error('[API] PUT Error:', error);
-    return Response.json({ error: error.message, debug: error.toString() }, { status: 500 });
+    console.error('[API] Bookings PUT Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -153,6 +187,15 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
+    if (!id) {
+      return Response.json({ error: 'Booking ID is required' }, { status: 400 });
+    }
+
+    const Booking = getBooking();
+    if (!Booking) {
+      return Response.json({ error: 'Booking model unavailable' }, { status: 503 });
+    }
+
     const booking = await Booking.findByPk(id);
     if (!booking) {
       return Response.json({ error: 'Booking not found' }, { status: 404 });
@@ -161,7 +204,10 @@ export async function DELETE(request) {
     await booking.destroy();
     return Response.json({ message: 'Booking deleted successfully' });
   } catch (error) {
-    console.error('[API] DELETE Error:', error);
-    return Response.json({ error: error.message, debug: error.toString() }, { status: 500 });
+    console.error('[API] Bookings DELETE Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }

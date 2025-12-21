@@ -1,5 +1,5 @@
 import { getDatabase } from '@/lib/database.js';
-import User from '@/lib/models/User.js';
+import getUser from '@/lib/models/User.js';
 import bcrypt from 'bcryptjs';
 
 // Verify admin role from cookie
@@ -70,6 +70,7 @@ export async function GET(request) {
 
     console.log('[API] Fetching users with filter:', where);
 
+    const User = getUser();
     const users = await User.findAll({
       where,
       attributes: { exclude: ['password'] },
@@ -151,6 +152,7 @@ export async function POST(request) {
     console.log(`[API] Creating user: ${email} with role: ${role}`);
 
     // Check if user exists
+    const User = getUser();
     const existingUser = await User.findOne({
       where: { email: email.toLowerCase().trim() },
     });
@@ -236,6 +238,7 @@ export async function PUT(request) {
 
     console.log(`[API] Updating user ID: ${id}`);
 
+    const User = getUser();
     const user = await User.findByPk(parseInt(id, 10));
     if (!user) {
       console.log('[API] User not found:', id);
@@ -332,6 +335,7 @@ export async function DELETE(request) {
 
     console.log(`[API] Deleting user ID: ${id}`);
 
+    const User = getUser();
     const user = await User.findByPk(parseInt(id, 10));
     if (!user) {
       console.log('[API] User not found:', id);

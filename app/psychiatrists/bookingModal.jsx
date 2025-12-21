@@ -1,399 +1,249 @@
 'use client'
 
-import { useState } from 'react'
-import { 
-  X, 
-  Calendar, 
-  Clock, 
-  User, 
-  CreditCard, 
-  Shield,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Calendar, Clock, Phone, ShieldCheck, Star, Video, X } from 'lucide-react'
+import BookingForm from '@/app/components/BookingForm'
+
+const getInitials = (name = '') => {
+  const parts = name.toString().trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return 'DR'
+  const first = parts[0]?.[0] || ''
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : ''
+  return `${first}${last}`.toUpperCase()
+}
+
+const formatFee = (fee) => {
+  const parsed = Number(fee ?? 0)
+  if (!Number.isFinite(parsed) || parsed <= 0) return 'Contact for pricing'
+  const normalized = parsed % 1 === 0 ? parsed.toFixed(0) : parsed.toFixed(2)
+  return `$${normalized}`
+}
+
+const parseDateInput = (value) => {
+  if (!value) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const formatSelectedDate = (value) => {
+  if (!value) return 'Select in form'
+  const parsed = parseDateInput(value)
+  if (!parsed) return value
+  return parsed.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const formatSelectedTime = (value) => (value ? value : 'Select in form')
+
+const formatSpecialization = (value) => {
+  if (!value) return 'Psychiatry'
+  if (Array.isArray(value)) {
+    const items = value.filter(Boolean)
+    if (!items.length) return 'Psychiatry'
+    if (items.length <= 2) return items.join(', ')
+    return `${items.slice(0, 2).join(', ')} +${items.length - 2} more`
+  }
+  return value.toString()
+}
 
 export default function BookingModal({
   isOpen,
   onClose,
   psychiatrist,
-  selectedDate,
-  selectedTime,
-  bookingType
+  selectedDate = '',
+  selectedTime = '',
+  bookingType = 'video'
 }) {
-  const [step, setStep] = useState(1)
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    reason: '',
-    insuranceProvider: '',
-    insuranceId: ''
-  })
+  const [mounted, setMounted] = useState(false)
+  const [selectedBookingDate, setSelectedBookingDate] = useState(selectedDate || '')
+  const [selectedBookingTime, setSelectedBookingTime] = useState(
+    selectedTime || '10:00 AM'
+  )
 
-  if (!isOpen) return null
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (step < 3) {
-      setStep(step + 1)
-    } else {
-      // Handle booking submission
-      alert('Booking confirmed! You will receive a confirmation email shortly.')
-      onClose()
+  useEffect(() => {
+    if (!isOpen) return undefined
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose?.()
     }
-  }
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+    document.addEventListener('keydown', handleKeyDown)
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
 
-  const totalAmount = psychiatrist.consultationFee
-  const bookingFee = 0 // Could add booking fee if needed
-  const tax = 0 // Could add tax if needed
-  const total = totalAmount + bookingFee + tax
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = originalOverflow
+    }
+  }, [isOpen, onClose])
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b flex justify-between items-center">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">Book Appointment</h3>
-            <p className="text-gray-600">Complete your booking in {3 - step} steps</p>
-          </div>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-xl"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+  useEffect(() => {
+    if (!isOpen) return
+    setSelectedBookingDate(selectedDate || '')
+    setSelectedBookingTime(selectedTime || '10:00 AM')
+  }, [isOpen, selectedDate, selectedTime])
 
-        {/* Progress Steps */}
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <div className="flex items-center justify-between">
-            {[1, 2, 3].map((stepNumber) => (
-              <div key={stepNumber} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= stepNumber ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                  {step > stepNumber ? <CheckCircle className="w-5 h-5" /> : stepNumber}
-                </div>
-                <div className={`ml-2 font-medium ${step >= stepNumber ? 'text-blue-600' : 'text-gray-600'}`}>
-                  {stepNumber === 1 && 'Details'}
-                  {stepNumber === 2 && 'Payment'}
-                  {stepNumber === 3 && 'Confirm'}
-                </div>
-                {stepNumber < 3 && (
-                  <div className={`w-12 h-1 mx-4 ${step > stepNumber ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+  if (!isOpen || !mounted) return null
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
-          {step === 1 && (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="bg-blue-50 rounded-xl p-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-6 h-6 text-blue-600" />
-                  <div>
-                    <div className="font-bold text-gray-900">
-                      {selectedDate || psychiatrist.nextAvailable} at {selectedTime || '10:00 AM'}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {bookingType === 'video' ? 'Video Consultation' : 'Phone Consultation'} • {psychiatrist.minSessionDuration} minutes
-                    </div>
-                  </div>
-                </div>
-              </div>
+  const psychiatristName = psychiatrist?.name || 'Selected psychiatrist'
+  const psychiatristId =
+    psychiatrist?.id ?? psychiatrist?._id ?? psychiatrist?.psychiatristId ?? ''
+  const specializationLabel = formatSpecialization(psychiatrist?.specialization)
+  const feeLabel = formatFee(
+    psychiatrist?.consultationFee ??
+      psychiatrist?.consultation_fee ??
+      psychiatrist?.fee ??
+      0
+  )
+  const sessionDuration =
+    psychiatrist?.minSessionDuration ?? psychiatrist?.min_session_duration ?? 45
+  const sessionDurationLabel = Number.isFinite(Number(sessionDuration))
+    ? `${Number(sessionDuration)} min`
+    : 'Session length varies'
+  const nextAvailable =
+    psychiatrist?.nextAvailable ?? psychiatrist?.next_available ?? 'Next available this week'
+  const sessionTypeLabel = bookingType === 'phone' ? 'Phone' : 'Video'
+  const SessionIcon = bookingType === 'phone' ? Phone : Video
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="John Doe"
-                  />
+  const content = (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div className="relative w-full max-w-5xl max-h-[85vh] overflow-y-auto rounded-3xl bg-white/95 border border-white/60 shadow-soft-3">
+        <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="relative p-8 bg-gradient-to-br from-primary/10 via-white to-secondary/10">
+            <div className="absolute -top-16 -right-20 h-40 w-40 rounded-full bg-white/40 blur-2xl" aria-hidden />
+            <div className="absolute -bottom-16 left-8 h-40 w-40 rounded-full bg-white/30 blur-3xl" aria-hidden />
+            <div className="relative">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary font-semibold flex items-center justify-center text-lg">
+                  {getInitials(psychiatristName)}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="you@example.com"
-                  />
+                  <p className="text-sm text-neutral-500">Booking with</p>
+                  <h3 className="text-2xl font-bold text-neutral-dark">{psychiatristName}</h3>
+                  <p className="text-sm text-neutral-500">{specializationLabel}</p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="(123) 456-7890"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for Visit (Optional)
-                </label>
-                <textarea
-                  name="reason"
-                  value={formData.reason}
-                  onChange={handleChange}
-                  rows="3"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Briefly describe what you'd like to discuss..."
-                />
-              </div>
-
-              {psychiatrist.acceptsInsurance && (
-                <div className="p-4 bg-green-50 rounded-xl">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Shield className="w-5 h-5 text-green-600" />
-                    <span className="font-bold text-gray-900">Insurance Information</span>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Insurance Provider
-                      </label>
-                      <input
-                        type="text"
-                        name="insuranceProvider"
-                        value={formData.insuranceProvider}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., Blue Cross Blue Shield"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Member ID
-                      </label>
-                      <input
-                        type="text"
-                        name="insuranceId"
-                        value={formData.insuranceId}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Your insurance member ID"
-                      />
-                    </div>
-                  </div>
+              <div className="mt-6 grid gap-3 text-sm">
+                <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
+                  <span className="inline-flex items-center gap-2 text-neutral-500">
+                    <SessionIcon className="w-4 h-4 text-primary" />
+                    Session type
+                  </span>
+                  <span className="font-semibold text-neutral-dark">{sessionTypeLabel}</span>
                 </div>
-              )}
-            </form>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-6">
-              <div className="bg-blue-50 rounded-xl p-6">
-                <h4 className="font-bold text-gray-900 text-lg mb-4">Payment Details</h4>
-                
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Consultation Fee</span>
-                    <span className="font-medium">${psychiatrist.consultationFee}</span>
-                  </div>
-                  {bookingFee > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Booking Fee</span>
-                      <span className="font-medium">${bookingFee}</span>
-                    </div>
-                  )}
-                  {tax > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tax</span>
-                      <span className="font-medium">${tax}</span>
-                    </div>
-                  )}
-                  <div className="border-t pt-3 flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span>${total}</span>
-                  </div>
+                <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
+                  <span className="inline-flex items-center gap-2 text-neutral-500">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    Preferred date
+                  </span>
+                  <span className="font-semibold text-neutral-dark">
+                    {formatSelectedDate(selectedBookingDate)}
+                  </span>
                 </div>
-
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-medium text-gray-900">Credit/Debit Card</span>
-                    <div className="flex gap-2">
-                      <span className="text-xl">💳</span>
-                      <span className="text-xl">💳</span>
-                      <span className="text-xl">💳</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Card Number
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="1234 5678 9012 3456"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Expiry Date
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="MM/YY"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          CVC
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="123"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
+                  <span className="inline-flex items-center gap-2 text-neutral-500">
+                    <Clock className="w-4 h-4 text-primary" />
+                    Preferred time
+                  </span>
+                  <span className="font-semibold text-neutral-dark">
+                    {formatSelectedTime(selectedBookingTime)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
+                  <span className="inline-flex items-center gap-2 text-neutral-500">
+                    <Clock className="w-4 h-4 text-primary" />
+                    Session length
+                  </span>
+                  <span className="font-semibold text-neutral-dark">{sessionDurationLabel}</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
+                  <span className="inline-flex items-center gap-2 text-neutral-500">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    Next available
+                  </span>
+                  <span className="font-semibold text-neutral-dark">{nextAvailable}</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
+                  <span className="inline-flex items-center gap-2 text-neutral-500">
+                    <Star className="w-4 h-4 text-amber-500" />
+                    Session fee
+                  </span>
+                  <span className="font-semibold text-neutral-dark">{feeLabel}</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-green-50 rounded-xl">
-                <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
-                <div>
-                  <div className="font-bold text-gray-900">Secure Payment</div>
-                  <p className="text-sm text-gray-700">
-                    Your payment is encrypted and secure. We use bank-level security to protect your information.
-                  </p>
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-neutral-600">
+                <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  HIPAA-ready
+                </div>
+                <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  Easy rescheduling
+                </div>
+                <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  Confirmation within 24h
+                </div>
+                <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2">
+                  <Star className="w-4 h-4 text-amber-500" />
+                  Trusted network
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
-          {step === 3 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-10 h-10 text-green-600" />
-                </div>
-                <h4 className="text-2xl font-bold text-gray-900 mb-2">Ready to Book!</h4>
-                <p className="text-gray-600">Review your appointment details below</p>
+          <div className="p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-neutral-dark">Confirm your appointment</h2>
+                <p className="text-sm text-neutral-500">
+                  Share a few details to reserve your time with this psychiatrist.
+                </p>
               </div>
-
-              <div className="bg-gray-50 rounded-xl p-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Psychiatrist</span>
-                    <span className="font-medium">{psychiatrist.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Date & Time</span>
-                    <span className="font-medium">
-                      {selectedDate || psychiatrist.nextAvailable} at {selectedTime || '10:00 AM'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Duration</span>
-                    <span className="font-medium">{psychiatrist.minSessionDuration} minutes</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Type</span>
-                    <span className="font-medium capitalize">{bookingType} Consultation</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Patient</span>
-                    <span className="font-medium">{formData.name}</span>
-                  </div>
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total Amount</span>
-                      <span>${total}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-xl">
-                <AlertCircle className="w-6 h-6 text-yellow-600 mt-0.5" />
-                <div>
-                  <div className="font-bold text-gray-900">Cancellation Policy</div>
-                  <p className="text-sm text-gray-700">
-                    You can cancel or reschedule up to 24 hours before your appointment without any charge.
-                    Late cancellations may incur a fee.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
-                <Clock className="w-6 h-6 text-blue-600" />
-                <div>
-                  <div className="font-bold text-gray-900">What happens next?</div>
-                  <p className="text-sm text-gray-700">
-                    You'll receive a confirmation email with the meeting link and instructions.
-                    The psychiatrist will join at the scheduled time.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t bg-gray-50">
-          <div className="flex justify-between">
-            {step > 1 ? (
               <button
-                onClick={() => setStep(step - 1)}
-                className="px-6 py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition"
-              >
-                Back
-              </button>
-            ) : (
-              <button
+                type="button"
                 onClick={onClose}
-                className="px-6 py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition"
+                className="rounded-full border border-neutral-200 p-2 text-neutral-500 transition hover:text-neutral-700 hover:border-neutral-300"
+                aria-label="Close booking modal"
               >
-                Cancel
+                <X className="w-5 h-5" />
               </button>
-            )}
-            
-            <button
-              onClick={handleSubmit}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-lg transition"
-            >
-              {step === 3 ? 'Confirm Booking' : 'Continue'}
-            </button>
+            </div>
+
+            <div className="mt-6">
+              <BookingForm
+                psychiatristId={psychiatristId}
+                psychiatristName={psychiatristName}
+                bookingType={bookingType}
+                initialDate={selectedBookingDate}
+                initialTimeSlot={selectedBookingTime}
+                onDateChange={setSelectedBookingDate}
+                onTimeChange={setSelectedBookingTime}
+              />
+            </div>
           </div>
         </div>
       </div>
     </div>
   )
+
+  return createPortal(content, document.body)
 }

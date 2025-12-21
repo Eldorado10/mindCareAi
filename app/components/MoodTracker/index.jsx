@@ -89,7 +89,7 @@ export default function MoodTracker() {
 
             {/* Mood Selector */}
             <div className="mb-8">
-              <div className="flex justify-between mb-6">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 mb-6">
                 {moods.map((mood) => (
                   <button
                     key={mood.value}
@@ -110,7 +110,7 @@ export default function MoodTracker() {
             {/* Activities */}
             <div className="mb-8">
               <h4 className="text-lg font-semibold text-gray-800 mb-4">What activities influenced your mood?</h4>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {activities.map((activity) => (
                   <button
                     key={activity.label}

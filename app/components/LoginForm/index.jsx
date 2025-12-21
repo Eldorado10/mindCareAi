@@ -17,6 +17,9 @@ export default function LoginForm() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
+  const inputBase = 'w-full rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 text-neutral-900 shadow-sm placeholder:text-neutral-400 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition disabled:cursor-not-allowed disabled:opacity-60';
+  const inputWithIcon = `${inputBase} pl-11`;
+  const inputWithIconAction = `${inputBase} pl-11 pr-12`;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,89 +85,104 @@ export default function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {/* Alert Messages */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <p className="text-red-700">{error}</p>
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50/80 p-4 text-sm text-red-700 shadow-sm">
+          <div className="flex gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p>{error}</p>
+          </div>
         </div>
       )}
 
       {success && userInfo && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <div className="text-green-700">
-            <p className="font-medium">Welcome back, {userInfo.firstName}! 👋</p>
-            <p className="text-sm mt-1">Role: <span className="font-semibold capitalize">{userInfo.role.replace('-', ' ')}</span></p>
-            <p className="text-sm">Redirecting...</p>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-700 shadow-sm">
+          <div className="flex gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-emerald-900">Welcome back, {userInfo.firstName || 'there'}!</p>
+              <p className="mt-1">Role: <span className="font-semibold capitalize">{userInfo.role.replace('-', ' ')}</span></p>
+              <p>Redirecting...</p>
+            </div>
           </div>
         </div>
       )}
 
       {/* Email */}
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-          <Mail className="w-4 h-4" /> Email
+      <div className="space-y-2">
+        <label htmlFor="email" className="block text-sm font-semibold text-neutral-800">
+          Email
         </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          placeholder="Enter your email"
-          disabled={loading}
-        />
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className={inputWithIcon}
+            placeholder="you@mindcareai.com"
+            autoComplete="email"
+            disabled={loading}
+            required
+          />
+        </div>
       </div>
 
       {/* Password */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label htmlFor="password" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <Lock className="w-4 h-4" /> Password
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className="text-sm font-semibold text-neutral-800">
+            Password
           </label>
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition"
             disabled={loading}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
-              <span className="flex items-center gap-1">
+              <>
                 <EyeOff className="w-4 h-4" /> Hide
-              </span>
+              </>
             ) : (
-              <span className="flex items-center gap-1">
+              <>
                 <Eye className="w-4 h-4" /> Show
-              </span>
+              </>
             )}
           </button>
         </div>
-        <input
-          type={showPassword ? 'text' : 'password'}
-          id="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          placeholder="Enter your password"
-          disabled={loading}
-        />
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <input
+            type={showPassword ? 'text' : 'password'}
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className={inputWithIconAction}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            disabled={loading}
+            required
+          />
+        </div>
       </div>
 
       {/* Remember Me & Forgot Password */}
       <div className="flex items-center justify-between text-sm">
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 text-neutral-600">
           <input
             type="checkbox"
-            className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+            className="h-4 w-4 rounded border-neutral-300 accent-primary"
             disabled={loading}
           />
-          <span className="text-gray-700">Remember me</span>
+          <span>Remember me</span>
         </label>
-        <a href="#" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+        <a href="/auth/forgot-password" className="font-semibold text-primary hover:text-primary/80 transition">
           Forgot password?
         </a>
       </div>
@@ -173,38 +191,50 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-primary to-secondary px-4 py-3 text-white font-semibold shadow-soft-2 transition hover:shadow-soft-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? (
-          <>
-            <Loader className="w-4 h-4 animate-spin" />
-            Signing in...
-          </>
-        ) : (
-          <>
-            <Lock className="w-4 h-4" />
-            Sign In
-          </>
-        )}
+        <span className="relative z-10 flex items-center justify-center gap-2">
+          {loading ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            <>
+              <Lock className="w-4 h-4" />
+              Sign In
+            </>
+          )}
+        </span>
+        <span className="pointer-events-none absolute inset-0 bg-white/10 opacity-0 transition group-hover:opacity-100"></span>
       </button>
 
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
+          <div className="w-full border-t border-neutral-200"></div>
         </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-3 bg-white text-gray-500">Or continue with</span>
+        <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
+          <span className="bg-white px-3 text-neutral-400">Demo Access</span>
         </div>
       </div>
 
       {/* Demo Credentials Info */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm font-medium text-blue-900 mb-2">Demo Credentials:</p>
-        <div className="space-y-1 text-xs text-blue-800">
-          <p><span className="font-semibold">Admin:</span> admin@example.com / password123</p>
-          <p><span className="font-semibold">Patient:</span> patient@example.com / password123</p>
-          <p><span className="font-semibold">Researcher:</span> researcher@example.com / password123</p>
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-neutral-700">
+        <p className="font-semibold text-primary">Demo credentials</p>
+        <div className="mt-3 space-y-2 text-xs text-neutral-600">
+          <div className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 shadow-sm">
+            <span className="font-semibold text-neutral-800">Admin</span>
+            <span className="text-neutral-500">admin@example.com / password123</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 shadow-sm">
+            <span className="font-semibold text-neutral-800">Patient</span>
+            <span className="text-neutral-500">patient@example.com / password123</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 shadow-sm">
+            <span className="font-semibold text-neutral-800">Researcher</span>
+            <span className="text-neutral-500">researcher@example.com / password123</span>
+          </div>
         </div>
       </div>
     </form>

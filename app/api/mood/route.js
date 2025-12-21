@@ -1,5 +1,5 @@
 import { getDatabase } from '@/lib/database.js';
-import MoodEntry from '@/lib/models/MoodEntry.js';
+import getMoodEntry from '@/lib/models/MoodEntry.js';
 
 // Helper function to validate authentication
 function getAuthenticatedUserId(request) {
@@ -47,6 +47,12 @@ export async function GET(request) {
       );
     }
 
+    // Get fresh model instance
+    const MoodEntry = getMoodEntry();
+    if (!MoodEntry) {
+      return Response.json({ error: 'MoodEntry model unavailable' }, { status: 503 });
+    }
+
     const moodEntries = await MoodEntry.findAll({
       where: { userId: parseInt(userId) },
       order: [['date', 'DESC']],
@@ -55,11 +61,11 @@ export async function GET(request) {
 
     return Response.json(moodEntries, { status: 200 });
   } catch (error) {
-    console.error('[API] Get mood entries error:', error);
-    return Response.json(
-      { error: error.message, debug: error.toString() },
-      { status: 500 }
-    );
+    console.error('[API] Mood GET Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -99,6 +105,12 @@ export async function POST(request) {
       );
     }
 
+    // Get fresh model instance
+    const MoodEntry = getMoodEntry();
+    if (!MoodEntry) {
+      return Response.json({ error: 'MoodEntry model unavailable' }, { status: 503 });
+    }
+
     const moodEntry = await MoodEntry.create({
       userId: parseInt(userId),
       moodLevel: parseInt(moodLevel),
@@ -111,11 +123,11 @@ export async function POST(request) {
 
     return Response.json(moodEntry, { status: 201 });
   } catch (error) {
-    console.error('[API] Create mood entry error:', error);
-    return Response.json(
-      { error: error.message, debug: error.toString() },
-      { status: 500 }
-    );
+    console.error('[API] Mood POST Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -145,6 +157,12 @@ export async function PUT(request) {
       return Response.json({ error: 'id is required' }, { status: 400 });
     }
 
+    // Get fresh model instance
+    const MoodEntry = getMoodEntry();
+    if (!MoodEntry) {
+      return Response.json({ error: 'MoodEntry model unavailable' }, { status: 503 });
+    }
+
     const moodEntry = await MoodEntry.findByPk(parseInt(id));
     if (!moodEntry) {
       return Response.json({ error: 'Mood entry not found' }, { status: 404 });
@@ -161,11 +179,11 @@ export async function PUT(request) {
     await moodEntry.update(body);
     return Response.json(moodEntry, { status: 200 });
   } catch (error) {
-    console.error('[API] Update mood entry error:', error);
-    return Response.json(
-      { error: error.message, debug: error.toString() },
-      { status: 500 }
-    );
+    console.error('[API] Mood PUT Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -194,6 +212,12 @@ export async function DELETE(request) {
       return Response.json({ error: 'id is required' }, { status: 400 });
     }
 
+    // Get fresh model instance
+    const MoodEntry = getMoodEntry();
+    if (!MoodEntry) {
+      return Response.json({ error: 'MoodEntry model unavailable' }, { status: 503 });
+    }
+
     const moodEntry = await MoodEntry.findByPk(parseInt(id));
     if (!moodEntry) {
       return Response.json({ error: 'Mood entry not found' }, { status: 404 });
@@ -210,10 +234,10 @@ export async function DELETE(request) {
     await moodEntry.destroy();
     return Response.json({ message: 'Mood entry deleted successfully' }, { status: 200 });
   } catch (error) {
-    console.error('[API] Delete mood entry error:', error);
-    return Response.json(
-      { error: error.message, debug: error.toString() },
-      { status: 500 }
-    );
+    console.error('[API] Mood DELETE Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }

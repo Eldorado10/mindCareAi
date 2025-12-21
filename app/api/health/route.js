@@ -1,5 +1,5 @@
 import { getDatabase } from '@/lib/database.js';
-import HealthData from '@/lib/models/HealthData.js';
+import getHealthData from '@/lib/models/HealthData.js';
 
 // Helper function to validate authentication
 function getAuthenticatedUserId(request) {
@@ -34,6 +34,11 @@ export async function GET(request) {
     const userId = searchParams.get('userId');
     const id = searchParams.get('id');
 
+    const HealthData = getHealthData();
+    if (!HealthData) {
+      return Response.json({ error: 'HealthData model unavailable' }, { status: 503 });
+    }
+
     if (id) {
       const healthData = await HealthData.findByPk(parseInt(id));
       if (!healthData) {
@@ -67,14 +72,13 @@ export async function GET(request) {
       where: { userId: parseInt(userId) },
       order: [['lastUpdated', 'DESC']],
     });
-
     return Response.json(healthData, { status: 200 });
   } catch (error) {
-    console.error('[API] Get health data error:', error);
-    return Response.json(
-      { error: error.message, debug: error.toString() },
-      { status: 500 }
-    );
+    console.error('[API] Health GET Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -114,6 +118,11 @@ export async function POST(request) {
       );
     }
 
+    const HealthData = getHealthData();
+    if (!HealthData) {
+      return Response.json({ error: 'HealthData model unavailable' }, { status: 503 });
+    }
+
     const healthData = await HealthData.create({
       userId: parseInt(userId),
       condition,
@@ -126,11 +135,11 @@ export async function POST(request) {
 
     return Response.json(healthData, { status: 201 });
   } catch (error) {
-    console.error('[API] Create health data error:', error);
-    return Response.json(
-      { error: error.message, debug: error.toString() },
-      { status: 500 }
-    );
+    console.error('[API] Health POST Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -160,6 +169,11 @@ export async function PUT(request) {
       return Response.json({ error: 'id is required' }, { status: 400 });
     }
 
+    const HealthData = getHealthData();
+    if (!HealthData) {
+      return Response.json({ error: 'HealthData model unavailable' }, { status: 503 });
+    }
+
     const healthData = await HealthData.findByPk(parseInt(id));
     if (!healthData) {
       return Response.json({ error: 'Health data not found' }, { status: 404 });
@@ -177,11 +191,11 @@ export async function PUT(request) {
     await healthData.update(body);
     return Response.json(healthData, { status: 200 });
   } catch (error) {
-    console.error('[API] Update health data error:', error);
-    return Response.json(
-      { error: error.message, debug: error.toString() },
-      { status: 500 }
-    );
+    console.error('[API] Health PUT Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
@@ -210,6 +224,11 @@ export async function DELETE(request) {
       return Response.json({ error: 'id is required' }, { status: 400 });
     }
 
+    const HealthData = getHealthData();
+    if (!HealthData) {
+      return Response.json({ error: 'HealthData model unavailable' }, { status: 503 });
+    }
+
     const healthData = await HealthData.findByPk(parseInt(id));
     if (!healthData) {
       return Response.json({ error: 'Health data not found' }, { status: 404 });
@@ -226,10 +245,10 @@ export async function DELETE(request) {
     await healthData.destroy();
     return Response.json({ message: 'Health data deleted successfully' }, { status: 200 });
   } catch (error) {
-    console.error('[API] Delete health data error:', error);
-    return Response.json(
-      { error: error.message, debug: error.toString() },
-      { status: 500 }
-    );
+    console.error('[API] Health DELETE Error:', error);
+    return Response.json({
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }

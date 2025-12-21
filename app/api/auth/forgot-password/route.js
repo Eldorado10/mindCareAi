@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/database.js'
-import User from '@/lib/models/User.js'
+import getUser from '@/lib/models/User.js'
 import crypto from 'crypto'
 import { sendEmail } from '@/lib/email.js'
 
@@ -26,6 +26,7 @@ export async function POST(request) {
     await sequelize.authenticate()
     
     // Find user by email
+    const User = getUser()
     const user = await User.findOne({ where: { email } })
     
     if (!user) {

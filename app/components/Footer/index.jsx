@@ -1,7 +1,14 @@
-import { Brain, Heart, Shield, Mail, Phone, MapPin } from 'lucide-react'
+import { Brain, Github, Heart, Instagram, Linkedin, Mail, Phone, Shield, Twitter } from 'lucide-react'
 import Link from 'next/link'
 
 export default function Footer() {
+  const socialLinks = [
+    { label: 'Twitter', href: 'https://twitter.com', icon: Twitter },
+    { label: 'LinkedIn', href: 'https://linkedin.com', icon: Linkedin },
+    { label: 'Instagram', href: 'https://instagram.com', icon: Instagram },
+    { label: 'GitHub', href: 'https://github.com', icon: Github },
+  ]
+
   return (
     <footer className="bg-gradient-to-b from-gray-900 to-black text-white">
       <div className="container mx-auto px-4 py-16">
@@ -21,18 +28,18 @@ export default function Footer() {
               Providing accessible, confidential, and compassionate mental health support through advanced AI technology.
             </p>
             <div className="flex gap-4">
-              <button className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center hover:bg-gray-700 transition">
-                🐦
-              </button>
-              <button className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center hover:bg-gray-700 transition">
-                📘
-              </button>
-              <button className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center hover:bg-gray-700 transition">
-                💼
-              </button>
-              <button className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center hover:bg-gray-700 transition">
-                📷
-              </button>
+              {socialLinks.map(({ label, href, icon: Icon }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center hover:bg-gray-700 transition"
+                >
+                  <Icon className="w-5 h-5 text-white/90" aria-hidden="true" />
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -73,7 +80,7 @@ export default function Footer() {
                 <Phone className="w-5 h-5 text-green-400" />
                 <span className="text-gray-400">1-800-MIND-CARE</span>
               </div>
-              
+
               <div className="mt-8 pt-8 border-t border-gray-800">
                 <h4 className="font-bold text-red-400 mb-4">Emergency Contacts</h4>
                 <div className="space-y-3">
@@ -101,7 +108,7 @@ export default function Footer() {
             <div className="text-gray-400 text-sm">
               © {new Date().getFullYear()} MindCare AI. All rights reserved.
             </div>
-            
+
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-green-400" />
@@ -112,7 +119,7 @@ export default function Footer() {
                 <span className="text-sm text-gray-400">Always Compassionate</span>
               </div>
             </div>
-            
+
             <div className="text-gray-400 text-sm">
               <span className="text-red-400">⚠️</span> Not a substitute for professional medical care
             </div>

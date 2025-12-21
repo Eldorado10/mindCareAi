@@ -11,6 +11,7 @@ export default function FilterSidebar({
   setSelectedLanguages,
   priceRange,
   setPriceRange,
+  maxPrice = 300,
   acceptsInsurance,
   setAcceptsInsurance,
   availableToday,
@@ -34,7 +35,7 @@ export default function FilterSidebar({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-24">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 lg:sticky lg:top-24">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <Filter className="w-5 h-5" />
@@ -55,7 +56,7 @@ export default function FilterSidebar({
           <input
             type="range"
             min="0"
-            max="300"
+            max={maxPrice}
             step="10"
             value={priceRange[1]}
             onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
