@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertCircle, Calendar, Heart, Menu, Minus, TrendingDown, TrendingUp, X } from 'lucide-react'
 import Link from 'next/link'
 import Sidebar from '@/app/components/Dashboard/Sidebar'
-import { fetchMoodEntries, fetchHealthData, fetchBookings } from '@/lib/api-client'
+import { fetchMoodEntries, fetchHealthData, fetchBookings, fetchRiskData } from '@/lib/api-client'
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null)
   const [moodEntries, setMoodEntries] = useState([])
+  const [riskEntries, setRiskEntries] = useState([])
   const [healthData, setHealthData] = useState([])
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,10 +28,11 @@ export default function DashboardPage() {
         const userData = JSON.parse(storedUser)
         setUser(userData)
 
-        const [moods, health, bookingData] = await Promise.all([
+        const [moods, health, bookingData, riskData] = await Promise.all([
           fetchMoodEntries(userData.id, 30),
           fetchHealthData(userData.id),
           fetchBookings(userData.email),
+          fetchRiskData(userData.id, 10),
         ])
 
         const sampleMoodEntries = () => {
@@ -62,6 +64,11 @@ export default function DashboardPage() {
         setMoodEntries(sortedMoods)
         setHealthData(health || [])
         setBookings(bookingData || [])
+        const riskList = Array.isArray(riskData) ? riskData : []
+        const sortedRisks = [...riskList].sort(
+          (a, b) => new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime()
+        )
+        setRiskEntries(sortedRisks)
 
         if (sortedMoods.length > 0) {
           const avgMood = Math.round(
@@ -156,19 +163,33 @@ export default function DashboardPage() {
     ? { label: 'Downward', Icon: TrendingDown, className: 'text-rose-600' }
     : { label: 'Neutral', Icon: Minus, className: 'text-amber-600' }
 
-  const riskData = useMemo(() => (
-    [...moodEntries]
+  const riskData = useMemo(() => {
+    if (riskEntries.length > 0) {
+      return [...riskEntries]
+        .filter((risk) => risk.detectedAt)
+        .sort((a, b) => new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime())
+        .slice(0, 5)
+        .map((risk) => ({
+          id: risk.id,
+          date: risk.detectedAt,
+          value: typeof risk.riskScore === 'number' ? risk.riskScore : null,
+          label: risk.riskType,
+          indicator: risk.indicator,
+        }))
+    }
+
+    return [...moodEntries]
       .filter((m) => m.moodLevel <= 3)
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, 5)
       .map((m) => ({
         id: m.id,
         date: m.date,
-        mood: m.moodLevel,
+        value: m.moodLevel,
         label: m.moodLabel,
         note: m.notes,
       }))
-  ), [moodEntries])
+  }, [moodEntries, riskEntries])
 
   const bookingSummary = useMemo(() => {
     const total = bookings.length
@@ -239,19 +260,72 @@ export default function DashboardPage() {
   }
 
   const riskSummary = useMemo(() => {
+    if (riskEntries.length > 0) {
+      const sortedRisks = [...riskEntries].sort(
+        (a, b) => new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime()
+      )
+      const now = new Date()
+      const weekAgo = new Date(now)
+      weekAgo.setDate(now.getDate() - 6)
+      const recentRisks = sortedRisks.filter((risk) => {
+        const time = new Date(risk.detectedAt).getTime()
+        return !Number.isNaN(time) && time >= weekAgo.getTime()
+      })
+      if (recentRisks.length > 0) {
+        const latest = recentRisks[0]
+        const riskLevel = latest?.riskLevel || 'low'
+        const riskClassName = riskLevel === 'critical' || riskLevel === 'high'
+          ? 'bg-rose-100 text-rose-700'
+          : riskLevel === 'medium'
+          ? 'bg-amber-100 text-amber-700'
+          : 'bg-emerald-100 text-emerald-700'
+        const scoredRecent = recentRisks.filter((risk) => typeof risk.riskScore === 'number')
+        const average = scoredRecent.length > 0
+          ? Math.round(scoredRecent.reduce((sum, risk) => sum + risk.riskScore, 0) / scoredRecent.length)
+          : null
+
+        return {
+          level: riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1),
+          className: riskClassName,
+          average,
+          averageLabel: 'Avg risk score last 7 days',
+        }
+      }
+    }
+
     const recentEntries = moodEntries.slice(0, 7)
     if (recentEntries.length === 0) {
-      return { level: 'Unknown', className: 'bg-slate-100 text-slate-600', average: null }
+      return {
+        level: 'Unknown',
+        className: 'bg-slate-100 text-slate-600',
+        average: null,
+        averageLabel: 'Avg mood last 7 days',
+      }
     }
     const average = recentEntries.reduce((sum, entry) => sum + entry.moodLevel, 0) / recentEntries.length
     if (average <= 3) {
-      return { level: 'High', className: 'bg-rose-100 text-rose-700', average: Math.round(average) }
+      return {
+        level: 'High',
+        className: 'bg-rose-100 text-rose-700',
+        average: Math.round(average),
+        averageLabel: 'Avg mood last 7 days',
+      }
     }
     if (average <= 5) {
-      return { level: 'Medium', className: 'bg-amber-100 text-amber-700', average: Math.round(average) }
+      return {
+        level: 'Medium',
+        className: 'bg-amber-100 text-amber-700',
+        average: Math.round(average),
+        averageLabel: 'Avg mood last 7 days',
+      }
     }
-    return { level: 'Low', className: 'bg-emerald-100 text-emerald-700', average: Math.round(average) }
-  }, [moodEntries])
+    return {
+      level: 'Low',
+      className: 'bg-emerald-100 text-emerald-700',
+      average: Math.round(average),
+      averageLabel: 'Avg mood last 7 days',
+    }
+  }, [moodEntries, riskEntries])
 
   const recentRiskIndicators = useMemo(() => riskData.slice(0, 3), [riskData])
 
@@ -512,7 +586,7 @@ export default function DashboardPage() {
                     {riskSummary.level}
                   </span>
                   {riskSummary.average !== null && (
-                    <p className="text-sm text-slate-500">Avg mood last 7 days: {riskSummary.average}/10</p>
+                    <p className="text-sm text-slate-500">{riskSummary.averageLabel}: {riskSummary.average}/10</p>
                   )}
                 </div>
 
@@ -526,10 +600,13 @@ export default function DashboardPage() {
                       >
                         <div>
                           <p className="font-semibold capitalize text-slate-700">{risk.label}</p>
+                          {risk.indicator && (
+                            <p className="text-xs text-slate-500">{risk.indicator}</p>
+                          )}
                           <p className="text-xs text-slate-500">{new Date(risk.date).toLocaleDateString()}</p>
                         </div>
                         <span className="rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-600">
-                          {risk.mood}/10
+                          {typeof risk.value === 'number' ? `${risk.value}/10` : '—'}
                         </span>
                       </div>
                     )) : (
