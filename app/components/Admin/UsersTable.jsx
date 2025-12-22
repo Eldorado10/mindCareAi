@@ -2,7 +2,7 @@
 
 import { Trash2, Edit2 } from 'lucide-react'
 
-export default function UsersTable({ users, onEdit, onDelete, isLoading = false }) {
+export default function UsersTable({ users, onEdit, onDelete, isLoading = false, emptyMessage = 'No users found' }) {
   const getRoleColor = (role) => {
     const colors = {
       admin: 'bg-rose-100 text-rose-700',
@@ -29,7 +29,7 @@ export default function UsersTable({ users, onEdit, onDelete, isLoading = false 
   if (users.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-500 text-lg">No users found</p>
+        <p className="text-slate-500 text-lg">{emptyMessage}</p>
       </div>
     )
   }
@@ -38,7 +38,7 @@ export default function UsersTable({ users, onEdit, onDelete, isLoading = false 
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="bg-slate-50/80 border-b border-slate-200/60">
+          <tr className="bg-white/70 border-b border-white/60">
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Name</th>
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Email</th>
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Role</th>
@@ -49,7 +49,7 @@ export default function UsersTable({ users, onEdit, onDelete, isLoading = false 
         </thead>
         <tbody>
           {users.map((user) => (
-            <tr key={user.id} className="border-b border-slate-200/60 hover:bg-white/60 transition">
+            <tr key={user.id} className="border-b border-white/60 hover:bg-white/60 transition">
               <td className="px-6 py-4">
                 <div>
                   <p className="font-medium text-slate-900">{user.firstName} {user.lastName}</p>
@@ -74,14 +74,14 @@ export default function UsersTable({ users, onEdit, onDelete, isLoading = false 
                 <div className="flex gap-2">
                   <button
                     onClick={() => onEdit(user)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                    className="p-2 text-blue-600 bg-white/70 border border-white/60 hover:bg-blue-50 rounded-lg transition shadow-soft-1"
                     title="Edit user"
                   >
                     <Edit2 size={18} />
                   </button>
                   <button
                     onClick={() => onDelete(user.id, `${user.firstName} ${user.lastName}`)}
-                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                    className="p-2 text-rose-600 bg-white/70 border border-white/60 hover:bg-rose-50 rounded-lg transition shadow-soft-1"
                     title="Delete user"
                   >
                     <Trash2 size={18} />

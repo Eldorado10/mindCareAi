@@ -4,9 +4,9 @@ import { AlertCircle, CheckCircle, X } from 'lucide-react';
 
 export default function Toast({ message, type = 'success', onClose }) {
   const colors = {
-    success: 'bg-green-50 border-green-200 text-green-800',
-    error: 'bg-red-50 border-red-200 text-red-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800',
+    success: 'bg-emerald-50/90 border-emerald-200/70 text-emerald-900',
+    error: 'bg-rose-50/90 border-rose-200/70 text-rose-900',
+    info: 'bg-blue-50/90 border-blue-200/70 text-blue-900',
   };
 
   const icons = {
@@ -17,14 +17,14 @@ export default function Toast({ message, type = 'success', onClose }) {
 
   return (
     <div
-      className={`fixed top-4 right-4 flex items-center gap-3 px-4 py-3 border rounded-md ${colors[type]} z-50 animate-slide-in`}
+      className={`fixed top-6 right-6 flex items-center gap-3 px-4 py-3 border rounded-2xl shadow-soft-2 backdrop-blur ${colors[type]} z-50 animate-slide-in-right`}
     >
       {icons[type]}
       <span className="text-sm font-medium">{message}</span>
       <button
         onClick={onClose}
         aria-label="Close notification"
-        className="ml-2 opacity-70 hover:opacity-100 transition"
+        className="ml-2 rounded-full p-1 opacity-70 hover:opacity-100 transition"
       >
         <X size={16} />
       </button>

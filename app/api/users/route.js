@@ -1,6 +1,25 @@
 import { getDatabase } from '@/lib/database.js'
 import getUser from '@/lib/models/User.js'
 
+let userSchemaReady = false
+
+async function ensureUserSchema(User, sequelize) {
+  if (userSchemaReady) return
+  await User.sync()
+
+  const queryInterface = sequelize.getQueryInterface()
+  const table = await queryInterface.describeTable('users')
+  const columnsToEnsure = ['specialization', 'bio']
+
+  for (const column of columnsToEnsure) {
+    if (!table[column] && User.rawAttributes[column]) {
+      await queryInterface.addColumn('users', column, User.rawAttributes[column])
+    }
+  }
+
+  userSchemaReady = true
+}
+
 export async function GET(request) {
   try {
     const sequelize = getDatabase()
@@ -15,6 +34,11 @@ export async function GET(request) {
     const id = searchParams.get('id')
 
     const User = getUser()
+    if (!User) {
+      return Response.json({ error: 'Database not initialized' }, { status: 503 })
+    }
+
+    await ensureUserSchema(User, sequelize)
     const sanitizeUser = (user) => {
       const data = user?.toJSON ? user.toJSON() : user
       if (!data) return data

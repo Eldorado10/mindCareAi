@@ -4,6 +4,7 @@ import getResource from '@/lib/models/Resource.js';
 import getEmergencyAlert from '@/lib/models/EmergencyAlert.js';
 import getRisk from '@/lib/models/Risk.js';
 import { formatCrisisResourcesText, getCrisisResources } from '@/lib/crisis-resources.js';
+import { formatEmergencyTeamContact, getActiveEmergencyTeam } from '@/lib/emergency-team.js';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openrouter/auto';
@@ -39,7 +40,7 @@ function normalizeOpenRouterModel(model) {
   return raw;
 }
 
-function buildCrisisResponse() {
+function buildCrisisResponse({ emergencyTeam } = {}) {
   const resources = getCrisisResources(DEFAULT_REGION);
   const lines = [
     "I'm really sorry you are feeling this way. Your safety matters.",
@@ -56,6 +57,11 @@ function buildCrisisResponse() {
 
   if (resources.crisisLink) {
     lines.push(`More crisis resources: ${resources.crisisLink}`);
+  }
+
+  const emergencyTeamLine = formatEmergencyTeamContact(emergencyTeam);
+  if (emergencyTeamLine) {
+    lines.push(emergencyTeamLine);
   }
 
   lines.push('If you want, you can tell me what is happening right now.');
@@ -474,9 +480,16 @@ export async function POST(request) {
     const { moodLevel, riskLevel, riskScore, riskType, isHeavy } = analyzeRiskAndMood(message);
     const isCrisis = riskLevel === 'high' || riskLevel === 'critical';
 
+    let emergencyTeam = null;
+    try {
+      emergencyTeam = await getActiveEmergencyTeam();
+    } catch (error) {
+      console.error('[EMERGENCY_TEAM]', error);
+    }
+
     // Build messages for OpenRouter
     const clinicContext = await buildClinicContext(message);
-    const crisisText = formatCrisisResourcesText(getCrisisResources(DEFAULT_REGION));
+    const crisisText = formatCrisisResourcesText(getCrisisResources(DEFAULT_REGION), emergencyTeam);
     const systemPrompt = {
       role: 'system',
       content: buildSystemPrompt({ clinicContext, crisisText }),
@@ -503,7 +516,7 @@ export async function POST(request) {
     let aiMessage = '';
     let responseMeta = { provider: 'fallback', model: null };
     if (isCrisis) {
-      aiMessage = buildCrisisResponse();
+      aiMessage = buildCrisisResponse({ emergencyTeam });
       responseMeta = { provider: 'crisis', model: null };
     } else if (OPENROUTER_API_KEY) {
       try {

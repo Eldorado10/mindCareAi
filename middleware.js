@@ -6,27 +6,29 @@ export async function middleware(request) {
   console.log(`[MIDDLEWARE] Processing path: ${pathname}`)
 
   // Public paths
-  const publicPaths = [
+  const publicExactPaths = new Set([
     '/',
-    '/auth/signin',
-    '/auth/signup',
-    '/auth/error',
-    '/auth/callback',
     '/emergency',
     '/about',
     '/contact',
     '/terms',
     '/privacy',
+    '/psychiatrists',
+    '/resources',
+    '/chatbot'
+  ])
+
+  const publicPrefixPaths = [
+    '/auth',
     '/api/auth',
     '/api/health',
-    '/psychiatrists',
-    '/resources'
+    '/api/chatbot'
   ]
 
   // Check if path is public
-  const isPublicPath = publicPaths.some(path =>
-    pathname === path || pathname.startsWith(path)
-  )
+  const isPublicPath =
+    publicExactPaths.has(pathname) ||
+    publicPrefixPaths.some(path => pathname.startsWith(path))
 
   // Get session from cookies
   const sessionCookie = request.cookies.get('next-auth.session-token')
@@ -86,6 +88,6 @@ export const config = {
     '/auth/signin',
     '/api/bookings/:path*',
     '/api/chatbot/:path*',
-    '/psychiatrists/[id]/:path*'
+    '/psychiatrists/:path*'
   ]
 }

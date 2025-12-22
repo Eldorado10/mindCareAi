@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import {
   ArrowUpDown,
   BadgeCheck,
@@ -83,7 +82,6 @@ const PsychiatristCardSkeleton = () => (
 )
 
 export default function PsychiatristsPage() {
-  const router = useRouter()
   const [psychiatrists, setPsychiatrists] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -95,18 +93,8 @@ export default function PsychiatristsPage() {
   const [availableToday, setAvailableToday] = useState(false)
   const [sortBy, setSortBy] = useState('rating')
   const [filteredPsychiatrists, setFilteredPsychiatrists] = useState([])
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user')
-      if (!storedUser) {
-        router.replace('/auth/signin')
-        return
-      }
-      setIsAuthenticated(true)
-    }
-
     async function loadPsychiatrists() {
       try {
         setLoading(true)
@@ -120,7 +108,7 @@ export default function PsychiatristsPage() {
       }
     }
     loadPsychiatrists()
-  }, [router])
+  }, [])
 
   useEffect(() => {
     const fees = (psychiatrists || [])
@@ -353,17 +341,6 @@ export default function PsychiatristsPage() {
       icon: Video
     }
   ]
-
-  if (!isAuthenticated && typeof window !== 'undefined') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-neutral-light">
@@ -648,7 +625,7 @@ export default function PsychiatristsPage() {
                     </div>
                     <Link
                       href={`/psychiatrists/${topPsychiatrist.id}`}
-                      className="bg-primary text-white px-5 py-3 rounded-xl font-semibold inline-flex items-center gap-2 hover:bg-primary/90 transition"
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-xl font-semibold inline-flex items-center gap-2 shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3"
                     >
                       View Profile
                       <ChevronRight className="w-4 h-4" />
@@ -673,7 +650,7 @@ export default function PsychiatristsPage() {
                 <p className="text-neutral-500 mb-6">Try adjusting your filters or search terms.</p>
                 <button
                   onClick={clearFilters}
-                  className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3"
                 >
                   Clear All Filters
                 </button>
@@ -753,7 +730,7 @@ export default function PsychiatristsPage() {
                       block: 'start'
                     })
                   }
-                  className="bg-accent text-neutral-dark font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition"
+                  className="bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-900 font-semibold px-6 py-3 rounded-xl shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3"
                 >
                   Browse availability
                 </button>

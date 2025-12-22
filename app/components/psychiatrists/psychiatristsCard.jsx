@@ -123,11 +123,11 @@ export default function PsychiatristCard({ psychiatrist }) {
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-soft-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-3">
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-secondary" aria-hidden />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-purple-500 to-emerald-400" aria-hidden />
       <div className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary font-semibold flex items-center justify-center text-lg">
+            <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-700 font-semibold flex items-center justify-center text-lg">
               {getInitials(psychiatrist.name)}
             </div>
             <div>
@@ -148,11 +148,11 @@ export default function PsychiatristCard({ psychiatrist }) {
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-neutral-600">
           <div className="flex items-center gap-2 rounded-xl bg-neutral-50 px-3 py-2">
-            <Clock className="w-4 h-4 text-primary" />
+            <Clock className="w-4 h-4 text-blue-600" />
             <span>{experienceLabel}</span>
           </div>
           <div className="flex items-center gap-2 rounded-xl bg-neutral-50 px-3 py-2">
-            <DollarSign className="w-4 h-4 text-primary" />
+            <DollarSign className="w-4 h-4 text-blue-600" />
             <span>{feeLabel}</span>
           </div>
         </div>
@@ -161,7 +161,7 @@ export default function PsychiatristCard({ psychiatrist }) {
           {visibleSpecializations.map((spec) => (
             <span
               key={spec}
-              className="bg-secondary/10 text-secondary text-xs font-semibold px-3 py-1 rounded-full"
+              className="bg-purple-50 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full"
             >
               {spec}
             </span>
@@ -199,8 +199,8 @@ export default function PsychiatristCard({ psychiatrist }) {
                   onClick={() => setBookingType(option.id)}
                   className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                     isActive
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-neutral-600 border-neutral-200 hover:border-primary/40'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-neutral-600 border-neutral-200 hover:border-blue-300'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -214,7 +214,7 @@ export default function PsychiatristCard({ psychiatrist }) {
             <button
               type="button"
               onClick={handleBookNow}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-soft-1 transition hover:bg-primary/90"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 text-sm font-semibold text-white shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3"
             >
               <Calendar className="w-4 h-4" />
               Book now
@@ -222,7 +222,7 @@ export default function PsychiatristCard({ psychiatrist }) {
             <button
               type="button"
               onClick={handleViewProfile}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 transition hover:border-primary/40 hover:text-primary"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 transition hover:border-blue-300 hover:text-blue-600"
             >
               View profile
               <ChevronRight className="w-4 h-4" />

@@ -73,9 +73,19 @@ export default function RegisterForm() {
         phone: formData.phone || null,
       };
 
-      await register(userData);
+      const registeredUser = await register(userData);
+      const role = registeredUser?.role || 'patient';
+      const userPayload = { ...registeredUser, role };
+
+      localStorage.setItem('user', JSON.stringify(userPayload));
+      localStorage.setItem('userRole', role);
+      if (userPayload?.id) {
+        document.cookie = `user-data=${encodeURIComponent(JSON.stringify({ id: userPayload.id, role }))};path=/`;
+      }
+      document.cookie = 'next-auth.session-token=session;path=/';
+
       setSuccess(true);
-      showToast('Thanks For Trusting MindCare AI. Now please Sign In', 'success');
+      showToast('Welcome to MindCare AI. Redirecting to home...', 'success');
       setFormData({
         firstName: '',
         lastName: '',
@@ -86,7 +96,7 @@ export default function RegisterForm() {
       });
 
       setTimeout(() => {
-        router.push('/auth/signin');
+        router.push('/');
       }, 1500);
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -295,7 +305,7 @@ export default function RegisterForm() {
       <button
         type="submit"
         disabled={loading}
-        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-primary to-secondary px-4 py-3 text-white font-semibold shadow-soft-2 transition hover:shadow-soft-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 text-white font-semibold shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="relative z-10 flex items-center justify-center gap-2">
           {loading ? (

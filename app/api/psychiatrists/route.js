@@ -17,17 +17,18 @@ export async function GET(request) {
       return Response.json({ error: 'Psychiatrist model unavailable' }, { status: 503 });
     }
 
-    const attributes = { attributes: { exclude: ['imageUrl'] } };
+    await Psychiatrist.sync();
+    
 
     if (id) {
-      const psychiatrist = await Psychiatrist.findByPk(id, attributes);
+      const psychiatrist = await Psychiatrist.findByPk(id);
       if (!psychiatrist) {
         return Response.json({ error: 'Psychiatrist not found' }, { status: 404 });
       }
       return Response.json(psychiatrist);
     }
 
-    const psychiatrists = await Psychiatrist.findAll(attributes);
+    const psychiatrists = await Psychiatrist.findAll();
     return Response.json(psychiatrists);
   } catch (error) {
     console.error('[API] Psychiatrists GET Error:', error);
@@ -51,6 +52,7 @@ export async function POST(request) {
       return Response.json({ error: 'Psychiatrist model unavailable' }, { status: 503 });
     }
 
+    await Psychiatrist.sync();
     const data = await request.json();
     const psychiatrist = await Psychiatrist.create(data);
     return Response.json(psychiatrist, { status: 201 });
@@ -83,6 +85,7 @@ export async function PUT(request) {
       return Response.json({ error: 'Psychiatrist model unavailable' }, { status: 503 });
     }
 
+    await Psychiatrist.sync();
     const data = await request.json();
     const psychiatrist = await Psychiatrist.findByPk(id);
     if (!psychiatrist) {
@@ -120,6 +123,7 @@ export async function DELETE(request) {
       return Response.json({ error: 'Psychiatrist model unavailable' }, { status: 503 });
     }
 
+    await Psychiatrist.sync();
     const psychiatrist = await Psychiatrist.findByPk(id);
     if (!psychiatrist) {
       return Response.json({ error: 'Psychiatrist not found' }, { status: 404 });

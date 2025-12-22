@@ -1,33 +1,45 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { TrendingUp, Calendar, BarChart3, Target } from 'lucide-react'
+import { createMoodEntry, fetchMoodEntries } from '@/lib/api-client'
 
 const moods = [
-  { emoji: '😭', label: 'Very Low', value: 1, color: 'bg-red-500' },
-  { emoji: '😔', label: 'Low', value: 2, color: 'bg-orange-400' },
-  { emoji: '😐', label: 'Neutral', value: 3, color: 'bg-yellow-400' },
-  { emoji: '🙂', label: 'Good', value: 4, color: 'bg-green-400' },
-  { emoji: '😊', label: 'Very Good', value: 5, color: 'bg-green-500' }
+  { emoji: '??', label: 'Very Low', value: 1, color: 'bg-red-500' },
+  { emoji: '??', label: 'Low', value: 2, color: 'bg-orange-400' },
+  { emoji: '??', label: 'Neutral', value: 3, color: 'bg-yellow-400' },
+  { emoji: '??', label: 'Good', value: 4, color: 'bg-green-400' },
+  { emoji: '??', label: 'Very Good', value: 5, color: 'bg-green-500' }
 ]
 
 const activities = [
-  { icon: '🏃', label: 'Exercise' },
-  { icon: '📖', label: 'Reading' },
-  { icon: '🎨', label: 'Creative' },
-  { icon: '🧘', label: 'Meditation' },
-  { icon: '👥', label: 'Social' },
-  { icon: '😴', label: 'Rest' }
+  { icon: '??', label: 'Exercise' },
+  { icon: '??', label: 'Reading' },
+  { icon: '??', label: 'Creative' },
+  { icon: '??', label: 'Meditation' },
+  { icon: '??', label: 'Social' },
+  { icon: '??', label: 'Rest' }
 ]
+
+const moodLabelMap = {
+  1: 'terrible',
+  2: 'poor',
+  3: 'okay',
+  4: 'good',
+  5: 'great',
+}
 
 export default function MoodTracker() {
   const [selectedMood, setSelectedMood] = useState(null)
   const [selectedActivities, setSelectedActivities] = useState([])
   const [notes, setNotes] = useState('')
   const [moodHistory, setMoodHistory] = useState([])
+  const [user, setUser] = useState(null)
+  const [loadingHistory, setLoadingHistory] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  // Generate sample data
-  useEffect(() => {
+  const generateSampleData = () => {
     const sampleData = []
     for (let i = 0; i < 7; i++) {
       const date = new Date()
@@ -38,25 +50,82 @@ export default function MoodTracker() {
         day: date.getDate()
       })
     }
-    setMoodHistory(sampleData.reverse())
+    return sampleData.reverse()
+  }
+
+  const loadMoodHistory = async (userId) => {
+    try {
+      setLoadingHistory(true)
+      setError('')
+      const entries = await fetchMoodEntries(userId, 7)
+      if (!entries || entries.length === 0) {
+        setMoodHistory(generateSampleData())
+        return
+      }
+      const normalized = entries.map((entry) => {
+        const scaled = Math.max(1, Math.min(5, Math.round(entry.moodLevel / 2)))
+        const d = new Date(entry.date)
+        return {
+          id: entry.id,
+          date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          mood: scaled,
+          day: d.getDate(),
+        }
+      }).reverse()
+      setMoodHistory(normalized)
+    } catch (err) {
+      console.error('Error loading mood history', err)
+      setError('Could not load mood history. Showing sample data.')
+      setMoodHistory(generateSampleData())
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (!storedUser) {
+      setLoadingHistory(false)
+      setMoodHistory(generateSampleData())
+      return
+    }
+    const parsed = JSON.parse(storedUser)
+    setUser(parsed)
+    loadMoodHistory(parsed.id)
   }, [])
 
-  const logMood = () => {
+  const logMood = async () => {
     if (!selectedMood) return
-    
-    const newEntry = {
-      date: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-      mood: selectedMood,
-      activities: selectedActivities,
-      notes: notes
+    if (!user) {
+      setError('Please sign in to save mood entries.')
+      return
     }
-    
-    alert(`Mood logged successfully! ${selectedMood}/5 - ${moods.find(m => m.value === selectedMood)?.label}`)
-    
-    // Reset form
-    setSelectedMood(null)
-    setSelectedActivities([])
-    setNotes('')
+
+    try {
+      setSubmitting(true)
+      setError('')
+      const moodLevel = Math.max(1, Math.min(10, selectedMood * 2))
+      const moodLabel = moodLabelMap[selectedMood] || 'okay'
+
+      await createMoodEntry({
+        userId: user.id,
+        moodLevel,
+        moodLabel,
+        notes,
+        improvement: selectedActivities.join(', '),
+      })
+
+      await loadMoodHistory(user.id)
+      alert(`Mood logged successfully! ${selectedMood}/5 - ${moods.find(m => m.value === selectedMood)?.label}`)
+      setSelectedMood(null)
+      setSelectedActivities([])
+      setNotes('')
+    } catch (err) {
+      console.error('Error saving mood entry', err)
+      setError('Could not save mood entry. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const toggleActivity = (activity) => {
@@ -141,11 +210,12 @@ export default function MoodTracker() {
 
             <button
               onClick={logMood}
-              disabled={!selectedMood}
+              disabled={!selectedMood || submitting || loadingHistory}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Log My Mood
+              {submitting ? 'Saving...' : 'Log My Mood'}
             </button>
+            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
           </div>
 
           {/* Right Column - Analytics */}
@@ -169,7 +239,7 @@ export default function MoodTracker() {
               
               <div className="space-y-4">
                 {moodHistory.map((day, index) => (
-                  <div key={index} className="flex items-center">
+                  <div key={day.id || index} className="flex items-center">
                     <div className="w-16 text-sm font-medium text-gray-600">{day.date}</div>
                     <div className="flex-1">
                       <div className="flex items-center gap-4">
@@ -186,6 +256,9 @@ export default function MoodTracker() {
                     </div>
                   </div>
                 ))}
+                {loadingHistory && (
+                  <p className="text-sm text-gray-500">Loading mood history...</p>
+                )}
               </div>
             </div>
 
@@ -199,19 +272,19 @@ export default function MoodTracker() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-700">Average Mood</span>
-                  <span className="font-bold text-gray-900">3.8/5</span>
+                  <span className="font-bold text-gray-900">{(moodHistory.reduce((sum, m) => sum + m.mood, 0) / (moodHistory.length || 1)).toFixed(1)}/5</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-700">Best Day</span>
-                  <span className="font-bold text-gray-900">Thursday (4.5/5)</span>
+                  <span className="font-bold text-gray-900">{moodHistory.length > 0 ? moodHistory.reduce((best, m) => m.mood >= best.mood ? m : best, moodHistory[0]).date : 'N/A'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-700">Consistency</span>
-                  <span className="font-bold text-green-600">↑ 15%</span>
+                  <span className="font-bold text-green-600">{moodHistory.length > 1 ? 'On track' : 'Start logging'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-700">Mood Swings</span>
-                  <span className="font-bold text-gray-900">Low</span>
+                  <span className="font-bold text-gray-900">{moodHistory.length > 0 ? Math.max(...moodHistory.map(m => m.mood)) - Math.min(...moodHistory.map(m => m.mood)) : 0}</span>
                 </div>
               </div>
               

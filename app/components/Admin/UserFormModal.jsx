@@ -33,7 +33,7 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
     if (!formData.email.includes('@')) newErrors.email = 'Valid email is required';
     if (!user && !formData.password) newErrors.password = 'Password is required';
     if (!formData.role) newErrors.role = 'Role is required';
-    
+
     if (['researcher', 'data-scientist'].includes(formData.role) && !formData.specialization.trim()) {
       newErrors.specialization = 'Specialization is required for this role';
     }
@@ -70,15 +70,15 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="glass rounded-3xl shadow-soft-3 max-w-xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center px-6 py-5 border-b border-white/60 bg-white/60">
+          <h2 className="text-xl font-bold text-slate-900">
             {user ? 'Edit User' : 'Add New User'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition"
+            className="text-slate-500 hover:text-slate-700 transition"
           >
             <X size={24} />
           </button>
@@ -86,14 +86,14 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {errors.submit && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded text-red-700">
+            <div className="flex items-center gap-2 p-3 bg-rose-50/80 border border-rose-200/70 rounded-xl text-rose-700">
               <AlertCircle size={18} />
               <span className="text-sm">{errors.submit}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
               First Name *
             </label>
             <input
@@ -101,16 +101,16 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.firstName ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2.5 border rounded-xl bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40 ${
+                errors.firstName ? 'border-rose-400' : 'border-white/70'
               }`}
               placeholder="John"
             />
-            {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+            {errors.firstName && <p className="text-rose-600 text-xs mt-1">{errors.firstName}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
               Last Name *
             </label>
             <input
@@ -118,16 +118,16 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.lastName ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2.5 border rounded-xl bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40 ${
+                errors.lastName ? 'border-rose-400' : 'border-white/70'
               }`}
               placeholder="Doe"
             />
-            {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+            {errors.lastName && <p className="text-rose-600 text-xs mt-1">{errors.lastName}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
               Email *
             </label>
             <input
@@ -136,17 +136,17 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
               value={formData.email}
               onChange={handleChange}
               disabled={!!user}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${
-                errors.email ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2.5 border rounded-xl bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40 disabled:bg-white/40 ${
+                errors.email ? 'border-rose-400' : 'border-white/70'
               }`}
               placeholder="john@example.com"
             />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            {errors.email && <p className="text-rose-600 text-xs mt-1">{errors.email}</p>}
           </div>
 
           {!user && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
                 Password *
               </label>
               <input
@@ -154,17 +154,17 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-2.5 border rounded-xl bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40 ${
+                  errors.password ? 'border-rose-400' : 'border-white/70'
                 }`}
-                placeholder="••••••••"
+                placeholder="Create a secure password"
               />
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              {errors.password && <p className="text-rose-600 text-xs mt-1">{errors.password}</p>}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
               Phone
             </label>
             <input
@@ -172,35 +172,35 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-white/70 rounded-xl bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40"
               placeholder="+1 (555) 000-0000"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
               Role *
             </label>
             <select
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.role ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2.5 border rounded-xl bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40 ${
+                errors.role ? 'border-rose-400' : 'border-white/70'
               }`}
             >
               <option value="">Select Role</option>
+              <option value="admin">Admin</option>
               <option value="patient">Patient</option>
-              <option value="psychiatrist">Psychiatrist</option>
               <option value="researcher">Researcher</option>
               <option value="data-scientist">Data Scientist</option>
             </select>
-            {errors.role && <p className="text-red-500 text-sm mt-1">{errors.role}</p>}
+            {errors.role && <p className="text-rose-600 text-xs mt-1">{errors.role}</p>}
           </div>
 
           {['researcher', 'data-scientist'].includes(formData.role) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
                 Specialization *
               </label>
               <input
@@ -208,24 +208,24 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
                 name="specialization"
                 value={formData.specialization}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.specialization ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-2.5 border rounded-xl bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40 ${
+                  errors.specialization ? 'border-rose-400' : 'border-white/70'
                 }`}
                 placeholder="e.g., Machine Learning, Psychology"
               />
-              {errors.specialization && <p className="text-red-500 text-sm mt-1">{errors.specialization}</p>}
+              {errors.specialization && <p className="text-rose-600 text-xs mt-1">{errors.specialization}</p>}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
               Bio
             </label>
             <textarea
               name="bio"
               value={formData.bio}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-white/70 rounded-xl bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40"
               placeholder="Brief bio..."
               rows={3}
             />
@@ -235,14 +235,14 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, user = null, 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition font-medium"
+              className="flex-1 mc-btn mc-btn-outline"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 mc-btn mc-btn-primary bg-gradient-to-r from-blue-600 to-emerald-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Saving...' : user ? 'Update' : 'Create'}
             </button>

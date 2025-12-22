@@ -1,6 +1,33 @@
 import { getDatabase } from '@/lib/database.js';
 import getUser from '@/lib/models/User.js';
 import bcrypt from 'bcryptjs';
+import { Op } from 'sequelize';
+
+const DISALLOWED_ROLE = 'psychiatrist';
+
+const normalizeRole = (role) =>
+  (typeof role === 'string' ? role.trim().toLowerCase() : role);
+
+const isPsychiatristRole = (role) => role === DISALLOWED_ROLE;
+
+let userSchemaReady = false;
+
+async function ensureUserSchema(User, sequelize) {
+  if (userSchemaReady) return;
+  await User.sync();
+
+  const queryInterface = sequelize.getQueryInterface();
+  const table = await queryInterface.describeTable('users');
+  const columnsToEnsure = ['specialization', 'bio'];
+
+  for (const column of columnsToEnsure) {
+    if (!table[column] && User.rawAttributes[column]) {
+      await queryInterface.addColumn('users', column, User.rawAttributes[column]);
+    }
+  }
+
+  userSchemaReady = true;
+}
 
 // Verify admin role from cookie
 function verifyAdminRole(request) {
@@ -65,12 +92,26 @@ export async function GET(request) {
       where.id = parseInt(id, 10);
     }
     if (role) {
-      where.role = role;
+      const normalizedRole = normalizeRole(role);
+      if (isPsychiatristRole(normalizedRole)) {
+        return Response.json(
+          { error: 'Psychiatrists are managed via the psychiatrists table.' },
+          { status: 400 }
+        );
+      }
+      where.role = normalizedRole;
+    } else {
+      where.role = { [Op.ne]: DISALLOWED_ROLE };
     }
 
     console.log('[API] Fetching users with filter:', where);
 
     const User = getUser();
+    if (!User) {
+      return Response.json({ error: 'Database not initialized' }, { status: 503 });
+    }
+
+    await ensureUserSchema(User, sequelize);
     const users = await User.findAll({
       where,
       attributes: { exclude: ['password'] },
@@ -119,9 +160,10 @@ export async function POST(request) {
 
     const body = await request.json();
     const { firstName, lastName, email, password, role, phone, specialization, bio } = body;
+    const normalizedRole = normalizeRole(role);
 
     // Validation
-    if (!firstName?.trim() || !lastName?.trim() || !email?.trim() || !password?.trim() || !role) {
+    if (!firstName?.trim() || !lastName?.trim() || !email?.trim() || !password?.trim() || !normalizedRole) {
       return Response.json(
         {
           error: 'Missing required fields',
@@ -141,18 +183,22 @@ export async function POST(request) {
     }
 
     // Validate role
-    const validRoles = ['admin', 'researcher', 'data-scientist', 'patient', 'psychiatrist'];
-    if (!validRoles.includes(role)) {
+    if (isPsychiatristRole(normalizedRole)) {
       return Response.json(
-        { error: `Invalid role. Must be one of: ${validRoles.join(', ')}` },
+        { error: 'Psychiatrists must be created via the psychiatrists table.' },
         { status: 400 }
       );
     }
 
-    console.log(`[API] Creating user: ${email} with role: ${role}`);
+    console.log(`[API] Creating user: ${email} with role: ${normalizedRole}`);
 
     // Check if user exists
     const User = getUser();
+    if (!User) {
+      return Response.json({ error: 'Database not initialized' }, { status: 503 });
+    }
+
+    await ensureUserSchema(User, sequelize);
     const existingUser = await User.findOne({
       where: { email: email.toLowerCase().trim() },
     });
@@ -174,7 +220,7 @@ export async function POST(request) {
       lastName: lastName.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
-      role,
+      role: normalizedRole,
       phone: phone?.trim() || null,
       specialization: specialization?.trim() || null,
       bio: bio?.trim() || null,
@@ -239,6 +285,11 @@ export async function PUT(request) {
     console.log(`[API] Updating user ID: ${id}`);
 
     const User = getUser();
+    if (!User) {
+      return Response.json({ error: 'Database not initialized' }, { status: 503 });
+    }
+
+    await ensureUserSchema(User, sequelize);
     const user = await User.findByPk(parseInt(id, 10));
     if (!user) {
       console.log('[API] User not found:', id);
@@ -264,7 +315,16 @@ export async function PUT(request) {
 
     // Prepare update data
     const updateData = { ...body };
-    
+    if (updateData.role) {
+      updateData.role = normalizeRole(updateData.role);
+      if (isPsychiatristRole(updateData.role)) {
+        return Response.json(
+          { error: 'Psychiatrists must be updated via the psychiatrists table.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Hash password if provided
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
@@ -276,8 +336,39 @@ export async function PUT(request) {
       updateData.email = updateData.email.toLowerCase().trim();
     }
 
+    if (typeof updateData.firstName === 'string') {
+      updateData.firstName = updateData.firstName.trim();
+    }
+    if (typeof updateData.lastName === 'string') {
+      updateData.lastName = updateData.lastName.trim();
+    }
+    if (typeof updateData.phone === 'string') {
+      updateData.phone = updateData.phone.trim() || null;
+    }
+    if (typeof updateData.specialization === 'string') {
+      updateData.specialization = updateData.specialization.trim() || null;
+    }
+    if (typeof updateData.bio === 'string') {
+      updateData.bio = updateData.bio.trim() || null;
+    }
+
+    const allowedFields = [
+      'firstName',
+      'lastName',
+      'email',
+      'password',
+      'role',
+      'phone',
+      'specialization',
+      'bio',
+      'isActive',
+    ];
+    const sanitizedUpdate = Object.fromEntries(
+      Object.entries(updateData).filter(([key]) => allowedFields.includes(key))
+    );
+
     // Update user
-    await user.update(updateData);
+    await user.update(sanitizedUpdate);
 
     console.log('[API] User updated successfully');
 
@@ -336,6 +427,11 @@ export async function DELETE(request) {
     console.log(`[API] Deleting user ID: ${id}`);
 
     const User = getUser();
+    if (!User) {
+      return Response.json({ error: 'Database not initialized' }, { status: 503 });
+    }
+
+    await ensureUserSchema(User, sequelize);
     const user = await User.findByPk(parseInt(id, 10));
     if (!user) {
       console.log('[API] User not found:', id);
@@ -345,10 +441,9 @@ export async function DELETE(request) {
       );
     }
 
-    // Soft delete by marking as inactive
-    await user.update({ isActive: false });
+    await user.destroy();
 
-    console.log('[API] User marked as inactive (soft deleted)');
+    console.log('[API] User deleted');
 
     return Response.json(
       { message: 'User deleted successfully', userId: user.id },

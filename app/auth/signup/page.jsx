@@ -12,14 +12,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-blue-600 hover:text-blue-700">
-            <Brain className="w-8 h-8" />
-            MindCare AI
-          </Link>
-        </div>
-      </header>
+      
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -38,9 +31,7 @@ export default function SignUpPage() {
               <div className="space-y-6">
                 <div className="flex gap-4 p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                      <span className="text-xl">👤</span>
-                    </div>
+                    
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Patient/User</h3>
@@ -50,9 +41,7 @@ export default function SignUpPage() {
 
                 <div className="flex gap-4 p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                      <span className="text-xl">🔬</span>
-                    </div>
+                    
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Researcher</h3>
@@ -62,9 +51,7 @@ export default function SignUpPage() {
 
                 <div className="flex gap-4 p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                      <span className="text-xl">📊</span>
-                    </div>
+                    
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Data Scientist</h3>
@@ -73,11 +60,7 @@ export default function SignUpPage() {
                 </div>
 
                 <div className="flex gap-4 p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                      <Shield className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
+                  
                   <div>
                     <h3 className="font-semibold text-gray-900">Admin</h3>
                     <p className="text-gray-600 text-sm mt-1">Manage users, resources, and platform settings</p>

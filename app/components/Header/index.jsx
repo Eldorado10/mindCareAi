@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
@@ -17,6 +17,7 @@ export default function Header() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const isAdmin = user?.role === 'admin'
 
   // Check if user is logged in
   useEffect(() => {
@@ -33,17 +34,28 @@ export default function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem('user')
+    localStorage.removeItem('userRole')
+    document.cookie = 'next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;'
+    document.cookie = 'user-data=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;'
+    document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;'
     setUser(null)
     router.push('/')
   }
 
-  const navItems = [
-    { label: 'Home', href: '/' },
-    { label: 'Psychiatrists', href: '/psychiatrists' },
-    { label: 'Resources', href: '/resources' },
-    { label: 'ChatBot', href: '/chatbot' },
-    { label: 'Dashboard', href: '/dashboard' },
-  ]
+  const navItems = useMemo(() => {
+    const baseItems = [
+      { label: 'Home', href: '/' },
+      { label: 'Psychiatrists', href: '/psychiatrists' },
+      { label: 'Resources', href: '/resources' },
+      { label: 'ChatBot', href: '/chatbot' },
+    ]
+
+    const dashboardItem = isAdmin
+      ? { label: 'Admin Control Center', href: '/admin' }
+      : { label: 'Dashboard', href: '/dashboard' }
+
+    return [...baseItems, dashboardItem]
+  }, [isAdmin])
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200">
@@ -92,7 +104,7 @@ export default function Header() {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium transition"
                 >
                   <LogOut className="w-5 h-5" />
-                  Logout
+                  Sign Out
                 </button>
               </div>
             ) : (
@@ -152,11 +164,11 @@ export default function Header() {
                       </div>
                     </div>
                     <Link
-                      href="/dashboard"
+                      href={isAdmin ? '/admin' : '/dashboard'}
                       className="w-full flex items-center justify-center px-4 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium transition"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Dashboard
+                      {isAdmin ? 'Admin Control Center' : 'Dashboard'}
                     </Link>
                     <button
                       onClick={() => {
@@ -166,7 +178,7 @@ export default function Header() {
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium transition"
                     >
                       <LogOut className="w-5 h-5" />
-                      Logout
+                      Sign Out
                     </button>
                   </>
                 ) : (

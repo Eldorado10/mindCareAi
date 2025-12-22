@@ -125,12 +125,12 @@ export default function BookingModal({
       />
       <div className="relative w-full max-w-5xl max-h-[85vh] overflow-y-auto rounded-3xl bg-white/95 border border-white/60 shadow-soft-3">
         <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="relative p-8 bg-gradient-to-br from-primary/10 via-white to-secondary/10">
+          <div className="relative p-8 bg-gradient-to-br from-blue-50 via-white to-purple-50">
             <div className="absolute -top-16 -right-20 h-40 w-40 rounded-full bg-white/40 blur-2xl" aria-hidden />
             <div className="absolute -bottom-16 left-8 h-40 w-40 rounded-full bg-white/30 blur-3xl" aria-hidden />
             <div className="relative">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary font-semibold flex items-center justify-center text-lg">
+                <div className="h-14 w-14 rounded-2xl bg-blue-100 text-blue-700 font-semibold flex items-center justify-center text-lg">
                   {getInitials(psychiatristName)}
                 </div>
                 <div>
@@ -143,14 +143,14 @@ export default function BookingModal({
               <div className="mt-6 grid gap-3 text-sm">
                 <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
                   <span className="inline-flex items-center gap-2 text-neutral-500">
-                    <SessionIcon className="w-4 h-4 text-primary" />
+                    <SessionIcon className="w-4 h-4 text-blue-600" />
                     Session type
                   </span>
                   <span className="font-semibold text-neutral-dark">{sessionTypeLabel}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
                   <span className="inline-flex items-center gap-2 text-neutral-500">
-                    <Calendar className="w-4 h-4 text-primary" />
+                    <Calendar className="w-4 h-4 text-blue-600" />
                     Preferred date
                   </span>
                   <span className="font-semibold text-neutral-dark">
@@ -159,7 +159,7 @@ export default function BookingModal({
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
                   <span className="inline-flex items-center gap-2 text-neutral-500">
-                    <Clock className="w-4 h-4 text-primary" />
+                    <Clock className="w-4 h-4 text-blue-600" />
                     Preferred time
                   </span>
                   <span className="font-semibold text-neutral-dark">
@@ -168,14 +168,14 @@ export default function BookingModal({
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
                   <span className="inline-flex items-center gap-2 text-neutral-500">
-                    <Clock className="w-4 h-4 text-primary" />
+                    <Clock className="w-4 h-4 text-blue-600" />
                     Session length
                   </span>
                   <span className="font-semibold text-neutral-dark">{sessionDurationLabel}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
                   <span className="inline-flex items-center gap-2 text-neutral-500">
-                    <Calendar className="w-4 h-4 text-primary" />
+                    <Calendar className="w-4 h-4 text-blue-600" />
                     Next available
                   </span>
                   <span className="font-semibold text-neutral-dark">{nextAvailable}</span>
@@ -195,11 +195,11 @@ export default function BookingModal({
                   HIPAA-ready
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2">
-                  <Calendar className="w-4 h-4 text-primary" />
+                  <Calendar className="w-4 h-4 text-blue-600" />
                   Easy rescheduling
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2">
-                  <Clock className="w-4 h-4 text-primary" />
+                  <Clock className="w-4 h-4 text-blue-600" />
                   Confirmation within 24h
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-3 py-2">

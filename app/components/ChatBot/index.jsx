@@ -34,6 +34,7 @@ export default function ChatBot({ fullMode = false }) {
   const [isTyping, setIsTyping] = useState(false)
   const [error, setError] = useState('')
   const [user, setUser] = useState(null)
+  const [emergencyTeam, setEmergencyTeam] = useState(null)
   const messagesEndRef = useRef(null)
 
   const heightClass = fullMode
@@ -49,6 +50,25 @@ export default function ChatBot({ fullMode = false }) {
       } catch (e) {
         console.error('Failed to parse user in storage', e)
       }
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    const loadEmergencyTeam = async () => {
+      try {
+        const res = await fetch('/api/emergency-team')
+        if (!res.ok) return
+        const data = await res.json()
+        if (!isMounted) return
+        setEmergencyTeam(data.team || null)
+      } catch (e) {
+        console.error('Failed to load emergency team', e)
+      }
+    }
+    loadEmergencyTeam()
+    return () => {
+      isMounted = false
     }
   }, [])
 
@@ -265,7 +285,9 @@ export default function ChatBot({ fullMode = false }) {
           </Link>
           <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
             <PhoneCall className="w-4 h-4" />
-            Emergency: 999 (Bangladesh)
+            {emergencyTeam
+              ? `Emergency team: ${emergencyTeam.name}${emergencyTeam.id ? ` (ID: ${emergencyTeam.id})` : ''} | ${emergencyTeam.phone} | ${emergencyTeam.email}`
+              : 'Emergency: 999 (Bangladesh)'}
           </div>
         </div>
 

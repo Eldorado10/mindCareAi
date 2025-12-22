@@ -1,0 +1,153 @@
+/** @type {import('tailwindcss').Config} */
+const { fontFamily } = require('tailwindcss/defaultTheme')
+
+module.exports = {
+  darkMode: 'class',
+  content: [
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: 'var(--color-primary-500)',
+          50: 'var(--color-primary-50)',
+          100: 'var(--color-primary-100)',
+          200: 'var(--color-primary-200)',
+          300: 'var(--color-primary-300)',
+          400: 'var(--color-primary-400)',
+          500: 'var(--color-primary-500)',
+          600: 'var(--color-primary-600)',
+          700: 'var(--color-primary-700)',
+          800: 'var(--color-primary-800)',
+          900: 'var(--color-primary-900)',
+        },
+        secondary: {
+          DEFAULT: 'var(--color-secondary-500)',
+          50: 'var(--color-secondary-50)',
+          100: 'var(--color-secondary-100)',
+          200: 'var(--color-secondary-200)',
+          300: 'var(--color-secondary-300)',
+          400: 'var(--color-secondary-400)',
+          500: 'var(--color-secondary-500)',
+          600: 'var(--color-secondary-600)',
+          700: 'var(--color-secondary-700)',
+          800: 'var(--color-secondary-800)',
+          900: 'var(--color-secondary-900)',
+        },
+        accent: {
+          DEFAULT: 'var(--color-accent-mint)',
+          coral: 'var(--color-accent-coral)',
+          lavender: 'var(--color-accent-lavender)',
+          mint: 'var(--color-accent-mint)',
+          sky: 'var(--color-accent-sky)',
+        },
+        neutral: {
+          DEFAULT: 'var(--color-neutral-600)',
+          light: 'var(--color-neutral-50)',
+          dark: 'var(--color-neutral-800)',
+          50: 'var(--color-neutral-50)',
+          100: 'var(--color-neutral-100)',
+          200: 'var(--color-neutral-200)',
+          300: 'var(--color-neutral-300)',
+          400: 'var(--color-neutral-400)',
+          500: 'var(--color-neutral-500)',
+          600: 'var(--color-neutral-600)',
+          700: 'var(--color-neutral-700)',
+          800: 'var(--color-neutral-800)',
+          900: 'var(--color-neutral-900)',
+        },
+        success: 'var(--color-success)',
+        warning: 'var(--color-warning)',
+        error: 'var(--color-error)',
+        info: 'var(--color-info)',
+      },
+      fontFamily: {
+        sans: ['Inter', ...fontFamily.sans],
+        display: ['Poppins', ...fontFamily.sans],
+      },
+      fontSize: {
+        hero: ['clamp(2.5rem, 2.1rem + 2vw, 4rem)', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+        xs: '0.75rem',
+        sm: '0.875rem',
+        base: '1rem',
+        lg: '1.125rem',
+        xl: '1.25rem',
+        '2xl': '1.5rem',
+        '3xl': '2rem',
+        '4xl': '3rem',
+      },
+      borderRadius: {
+        lg: '8px',
+        xl: '12px',
+        '2xl': '20px',
+      },
+      boxShadow: {
+        'soft-1': 'var(--shadow-xs)',
+        'soft-2': 'var(--shadow-sm)',
+        'soft-3': 'var(--shadow-md)',
+      },
+      keyframes: {
+        gradient: {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
+        },
+        pulseCta: {
+          '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(76, 215, 182, 0.7)' },
+          '50%': { transform: 'scale(1.05)', boxShadow: '0 0 0 10px rgba(76, 215, 182, 0)' },
+        },
+        fill: {
+          '0%': { width: '0%' },
+          '100%': { width: '100%' },
+        },
+        countUp: {
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        fadeInUp: {
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideInRight: {
+          '0%': { opacity: '0', transform: 'translateX(24px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        slideIn: {
+          '0%': { opacity: '0', transform: 'translateX(12px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        glowPulse: {
+          '0%': { boxShadow: '0 0 16px rgba(93, 139, 245, 0.15)' },
+          '50%': { boxShadow: '0 0 32px rgba(157, 113, 232, 0.3)' },
+          '100%': { boxShadow: '0 0 16px rgba(93, 139, 245, 0.15)' },
+        },
+        sparkle: {
+          '0%, 100%': { opacity: '0', transform: 'scale(0.6) translateY(0)' },
+          '50%': { opacity: '1', transform: 'scale(1) translateY(-8px)' },
+        },
+      },
+      animation: {
+        gradient: 'gradient 15s ease infinite',
+        'pulse-cta': 'pulseCta 2s infinite',
+        fill: 'fill 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        'count-up': 'countUp 1s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        float: 'float 6s ease-in-out infinite',
+        'fade-in-up': 'fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1) both',
+        'slide-in-right': 'slideInRight 0.7s cubic-bezier(0.4, 0, 0.2, 1) both',
+        'slide-in': 'slideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both',
+        'pulse-slow': 'pulse 6s ease-in-out infinite',
+        'glow-pulse': 'glowPulse 5s ease-in-out infinite',
+        sparkle: 'sparkle 4s ease-in-out infinite',
+      },
+    },
+  },
+  plugins: [],
+}

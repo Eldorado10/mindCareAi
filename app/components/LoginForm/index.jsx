@@ -191,7 +191,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-primary to-secondary px-4 py-3 text-white font-semibold shadow-soft-2 transition hover:shadow-soft-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 text-white font-semibold shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="relative z-10 flex items-center justify-center gap-2">
           {loading ? (
@@ -210,33 +210,9 @@ export default function LoginForm() {
       </button>
 
       {/* Divider */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-neutral-200"></div>
-        </div>
-        <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
-          <span className="bg-white px-3 text-neutral-400">Demo Access</span>
-        </div>
-      </div>
-
+      
       {/* Demo Credentials Info */}
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-neutral-700">
-        <p className="font-semibold text-primary">Demo credentials</p>
-        <div className="mt-3 space-y-2 text-xs text-neutral-600">
-          <div className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 shadow-sm">
-            <span className="font-semibold text-neutral-800">Admin</span>
-            <span className="text-neutral-500">admin@example.com / password123</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 shadow-sm">
-            <span className="font-semibold text-neutral-800">Patient</span>
-            <span className="text-neutral-500">patient@example.com / password123</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 shadow-sm">
-            <span className="font-semibold text-neutral-800">Researcher</span>
-            <span className="text-neutral-500">researcher@example.com / password123</span>
-          </div>
-        </div>
-      </div>
+      
     </form>
   );
 }

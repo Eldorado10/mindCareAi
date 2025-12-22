@@ -215,7 +215,7 @@ export default function PsychiatristDetail() {
         <div className="max-w-5xl mx-auto">
           <Link
             href="/psychiatrists"
-            className="inline-flex items-center gap-2 text-primary font-semibold hover:text-primary/80"
+            className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Psychiatrists
@@ -297,7 +297,7 @@ export default function PsychiatristDetail() {
                     block: 'start'
                   })
                 }
-                className="mt-6 w-full rounded-xl bg-white text-neutral-dark px-4 py-3 font-semibold hover:bg-white/90 transition"
+                className="mt-6 w-full rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-4 py-3 font-semibold text-slate-900 shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3"
               >
                 Book this session
               </button>
@@ -323,7 +323,7 @@ export default function PsychiatristDetail() {
                   {(specializationList.length ? specializationList : ['General Psychiatry']).map((specialty) => (
                     <span
                       key={specialty}
-                      className="bg-secondary/10 text-secondary text-xs font-semibold px-3 py-1 rounded-full"
+                      className="bg-purple-50 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full"
                     >
                       {specialty}
                     </span>
@@ -378,21 +378,21 @@ export default function PsychiatristDetail() {
                 <div className="mt-4 space-y-3 text-sm text-neutral-600">
                   <div className="flex items-center justify-between gap-3">
                     <span className="inline-flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-primary" />
+                      <DollarSign className="w-4 h-4 text-blue-600" />
                       Session fee
                     </span>
                     <span className="font-semibold text-neutral-dark">{feeLabel}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="inline-flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary" />
+                      <Clock className="w-4 h-4 text-blue-600" />
                       Session length
                     </span>
                     <span className="font-semibold text-neutral-dark">{sessionDurationLabel}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="inline-flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
+                      <Calendar className="w-4 h-4 text-blue-600" />
                       Next available
                     </span>
                     <span className="font-semibold text-neutral-dark">{availabilitySummary}</span>
@@ -410,16 +410,16 @@ export default function PsychiatristDetail() {
                       <button
                         key={option.id}
                         type="button"
-                        onClick={() => setBookingType(option.id)}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                          isActive
-                            ? 'bg-primary text-white border-primary'
-                            : 'bg-white text-neutral-600 border-neutral-200 hover:border-primary/40'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        {option.label}
-                      </button>
+                      onClick={() => setBookingType(option.id)}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        isActive
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-neutral-600 border-neutral-200 hover:border-blue-300'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {option.label}
+                    </button>
                     )
                   })}
                 </div>
@@ -427,7 +427,7 @@ export default function PsychiatristDetail() {
                 <button
                   type="button"
                   onClick={handleOpenBooking}
-                  className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-soft-1 transition hover:bg-primary/90"
+                  className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 text-sm font-semibold text-white shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3"
                 >
                   <Calendar className="w-4 h-4" />
                   Open booking modal

@@ -1,196 +1,194 @@
 'use client'
 
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { HeartPulse, LineChart as LineChartIcon, Activity } from 'lucide-react'
+import Link from 'next/link'
+import { Activity, ChevronRight, Heart, Shield } from 'lucide-react'
 
-export default function Sidebar({ chartData = [], maxMood = 10, lineDims, userGrowthData = [], moodEntries = [], healthData = [] }) {
-  const sectionBase = 'rounded-3xl border border-white/70 bg-white/90 shadow-soft-2 backdrop-blur p-5 space-y-4'
-  const panelBase = 'rounded-2xl border border-white/60 bg-white/80'
-  const safeLineDims = lineDims || { width: 360, height: 160, margin: 20, step: 0, yScale: 1, points: '' }
+export default function Sidebar({
+  chartData,
+  lineDims,
+  userGrowthData,
+  moodEntries,
+  healthData,
+  improvementIndicators,
+}) {
+  const cardBase = 'rounded-3xl border border-white/70 bg-white/90 shadow-soft-2 backdrop-blur'
+  const sortedMoods = [...moodEntries].sort((a, b) => new Date(b.date) - new Date(a.date))
+  const recentMoodEntries = sortedMoods.slice(0, 5)
+  const hasMoodChart = chartData.length > 1 && lineDims.points
+  const areaPoints = hasMoodChart
+    ? `${lineDims.points} ${lineDims.width - lineDims.margin},${lineDims.height - lineDims.margin} ${lineDims.margin},${lineDims.height - lineDims.margin}`
+    : ''
+
+  const healthItems = Array.isArray(healthData) ? healthData : []
+  const activeConditions = healthItems.filter((item) => item.status === 'active').length
+  const healthDates = healthItems
+    .map((item) => item.lastUpdated || item.updatedAt || item.createdAt)
+    .filter(Boolean)
+    .sort((a, b) => new Date(b) - new Date(a))
+  const latestHealthUpdate = healthDates.length > 0
+    ? new Date(healthDates[0]).toLocaleDateString()
+    : null
+
+  const improvements = improvementIndicators?.length
+    ? improvementIndicators
+    : [{ label: 'Set your first goal', detail: 'Add a daily check-in routine' }]
 
   return (
-    <aside className="space-y-5 lg:sticky lg:top-6">
-      <div className={sectionBase}>
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-blue-500/10 p-2 text-blue-600">
-            <LineChartIcon className="h-5 w-5" />
-          </div>
+    <div className="space-y-6">
+      <section className={`${cardBase} p-5`}>
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Mood</p>
-            <p className="text-lg font-semibold text-slate-900">Trend & Entries</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Mood</p>
+            <p className="text-lg font-semibold text-slate-900">Mood trend</p>
+          </div>
+          <div className="rounded-2xl bg-emerald-100/70 p-2 text-emerald-700">
+            <Heart className="h-5 w-5" />
           </div>
         </div>
 
-        {chartData.length > 0 ? (
-          <div className={`${panelBase} p-3`}>
-            <div className="flex items-end gap-2 h-44">
-              {chartData.map((data) => {
-                const heightPercent = (data.mood / maxMood) * 100
+        <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+          {hasMoodChart ? (
+            <svg
+              viewBox={`0 0 ${lineDims.width} ${lineDims.height}`}
+              className="h-32 w-full"
+              role="img"
+              aria-label="Mood trend"
+            >
+              <defs>
+                <linearGradient id="moodLine" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#4CD7B6" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#5B8BF5" stopOpacity="0.9" />
+                </linearGradient>
+                <linearGradient id="moodFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#4CD7B6" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#5B8BF5" stopOpacity="0.05" />
+                </linearGradient>
+              </defs>
+              <polygon points={areaPoints} fill="url(#moodFill)" />
+              <polyline
+                fill="none"
+                stroke="url(#moodLine)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={lineDims.points}
+              />
+            </svg>
+          ) : (
+            <p className="text-sm text-slate-500">Not enough mood data to chart a trend yet.</p>
+          )}
+        </div>
+
+        <div className="mt-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Recent mood entries</p>
+          <div className="mt-2 space-y-2">
+            {recentMoodEntries.length > 0 ? recentMoodEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-2 text-sm"
+              >
+                <div>
+                  <p className="font-semibold capitalize text-slate-700">{entry.moodLabel}</p>
+                  <p className="text-xs text-slate-500">{new Date(entry.date).toLocaleDateString()}</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                  {entry.moodLevel}/10
+                </span>
+              </div>
+            )) : (
+              <p className="text-sm text-slate-500">No mood entries yet.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className={`${cardBase} p-5`}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Tracking Data</p>
+            <p className="text-lg font-semibold text-slate-900">Growth progress</p>
+          </div>
+          <div className="rounded-2xl bg-blue-100/70 p-2 text-blue-700">
+            <Activity className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+          {userGrowthData.length > 0 ? (
+            <div className="flex items-end gap-3">
+              {userGrowthData.map((item) => {
+                const barHeight = Math.max(18, Math.round((item.score / 10) * 100))
                 return (
-                  <div key={data.day} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full flex justify-center">
+                  <div key={item.month} className="flex-1">
+                    <div className="relative h-20 rounded-full bg-white/80">
                       <div
-                        className="w-7 bg-gradient-to-t from-blue-600 to-emerald-400 rounded-t-lg transition-all hover:from-blue-700 hover:to-emerald-500 cursor-pointer group relative"
-                        style={{ height: `${heightPercent}%` }}
-                      >
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-2 py-1 text-[10px] text-white opacity-0 transition group-hover:opacity-100 whitespace-nowrap">
-                          Day {data.day}: {data.mood}
-                        </div>
-                      </div>
+                        className="absolute bottom-0 left-0 right-0 rounded-full bg-gradient-to-t from-emerald-400 to-blue-400"
+                        style={{ height: `${barHeight}%` }}
+                      />
                     </div>
-                    <span className="text-[10px] text-slate-500">D{data.day}</span>
+                    <p className="mt-2 text-center text-[11px] font-semibold text-slate-500">{item.month}</p>
                   </div>
                 )
               })}
             </div>
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500">No mood data yet.</p>
-        )}
-
-        <div className="space-y-2">
-          {moodEntries.slice(0, 3).map((entry) => (
-            <div key={entry.id} className={`${panelBase} p-3 flex items-center justify-between`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
-                  entry.moodLevel >= 8
-                    ? 'bg-emerald-500'
-                    : entry.moodLevel >= 5
-                    ? 'bg-amber-500'
-                    : 'bg-rose-500'
-                }`}>
-                  {entry.moodLevel}
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-900 capitalize leading-tight">{entry.moodLabel}</p>
-                  <p className="text-[11px] text-slate-500">{new Date(entry.date).toLocaleDateString()}</p>
-                </div>
-              </div>
-              {entry.improvement && (
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                  {entry.improvement}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className={sectionBase}>
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-emerald-500/10 p-2 text-emerald-600">
-            <Activity className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Tracking Data</p>
-            <p className="text-lg font-semibold text-slate-900">Growth & Improvement</p>
-          </div>
+          ) : (
+            <p className="text-sm text-slate-500">Progress bars appear after a few check-ins.</p>
+          )}
         </div>
 
-        {userGrowthData.length > 0 ? (
-          <div className={`${panelBase} p-3`}>
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={userGrowthData}>
-                <defs>
-                  <linearGradient id="colorUsersSidebar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4CD7B6" stopOpacity={0.75} />
-                    <stop offset="95%" stopColor="#4CD7B6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 10]} stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0f172a',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: '#fff'
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="score"
-                  stroke="#10b981"
-                  fillOpacity={1}
-                  fill="url(#colorUsersSidebar)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500">No growth data yet.</p>
-        )}
-
-        {chartData.length > 1 ? (
-          <div className={`${panelBase} p-3`}>
-            <svg
-              viewBox={`0 0 ${safeLineDims.width} ${safeLineDims.height}`}
-              preserveAspectRatio="xMidYMid meet"
-              className="w-full h-40 rounded-2xl bg-white/70"
-            >
-              <polyline
-                points={safeLineDims.points}
-                fill="none"
-                stroke="#2563eb"
-                strokeWidth="3"
-              />
-              {chartData.map((d, i) => {
-                const x = safeLineDims.margin + i * safeLineDims.step
-                const y = safeLineDims.height - safeLineDims.margin - d.mood * safeLineDims.yScale
-                return <circle key={i} cx={x} cy={y} r="4" fill="#10b981" />
-              })}
-            </svg>
-            <div className="flex justify-between text-[11px] text-slate-500 mt-2 px-1">
-              <span>Start</span>
-              <span>Today</span>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500">Add more entries to see your improvement path.</p>
-        )}
-      </div>
-
-      <div className={sectionBase}>
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-rose-500/10 p-2 text-rose-600">
-            <HeartPulse className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Health Data</p>
-            <p className="text-lg font-semibold text-slate-900">Conditions</p>
-          </div>
-        </div>
-
-        {healthData.length > 0 ? (
-          <div className="space-y-3">
-            {healthData.slice(0, 4).map((health) => (
-              <div key={health.id} className={`${panelBase} p-3`}> 
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-slate-900">{health.condition}</p>
-                    <p className="text-[11px] text-slate-500">Status: <span className="font-medium capitalize text-slate-700">{health.status}</span></p>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-semibold capitalize ${
-                    health.severity === 'severe'
-                      ? 'bg-rose-100 text-rose-700'
-                      : health.severity === 'moderate'
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-emerald-100 text-emerald-700'
-                  }`}>
-                    {health.severity}
-                  </span>
-                </div>
-                {health.description && (
-                  <p className="text-sm text-slate-600 mt-2">{health.description}</p>
-                )}
+        <div className="mt-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Improvement path</p>
+          <div className="mt-2 space-y-2">
+            {improvements.map((item, index) => (
+              <div
+                key={`${item.label}-${index}`}
+                className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-2"
+              >
+                <p className="text-sm font-semibold text-slate-900">{item.label}</p>
+                <p className="text-xs text-slate-500">{item.detail}</p>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-slate-500">No health conditions recorded yet.</p>
-        )}
-      </div>
-    </aside>
+        </div>
+      </section>
+
+      <section className={`${cardBase} p-5`}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Health Data</p>
+            <p className="text-lg font-semibold text-slate-900">Wellness snapshot</p>
+          </div>
+          <div className="rounded-2xl bg-amber-100/70 p-2 text-amber-700">
+            <Shield className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Records</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">{healthItems.length}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Active</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">{activeConditions}</p>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Latest update</p>
+          <p className="mt-1 text-sm font-semibold text-slate-700">
+            {latestHealthUpdate || 'No updates yet'}
+          </p>
+        </div>
+
+        <Link
+          href="/resources"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
+        >
+          View health resources
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+      </section>
+    </div>
   )
 }

@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
-import { Heart, AlertCircle, Calendar } from 'lucide-react'
-import { fetchMoodEntries, fetchHealthData, fetchBookings } from '@/lib/api-client'
-import Sidebar from '@/app/components/Dashboard/Sidebar'
+import { useEffect, useMemo, useState } from 'react'
+import { AlertCircle, Calendar, Heart, Menu, Minus, TrendingDown, TrendingUp, X } from 'lucide-react'
 import Link from 'next/link'
+import Sidebar from '@/app/components/Dashboard/Sidebar'
+import { fetchMoodEntries, fetchHealthData, fetchBookings } from '@/lib/api-client'
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null)
@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [moodStats, setMoodStats] = useState({ average: 0, trend: 'stable', improvement: 0 })
+  const [showSidebar, setShowSidebar] = useState(false)
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -56,16 +57,18 @@ export default function DashboardPage() {
         }
 
         const moodList = (moods && moods.length > 0) ? moods : sampleMoodEntries()
-        setMoodEntries(moodList)
+        const sortedMoods = [...moodList].sort((a, b) => new Date(b.date) - new Date(a.date))
+
+        setMoodEntries(sortedMoods)
         setHealthData(health || [])
         setBookings(bookingData || [])
 
-        if (moodList && moodList.length > 0) {
+        if (sortedMoods.length > 0) {
           const avgMood = Math.round(
-            moodList.reduce((sum, m) => sum + m.moodLevel, 0) / moodList.length
+            sortedMoods.reduce((sum, m) => sum + m.moodLevel, 0) / sortedMoods.length
           )
           const recentAvg = Math.round(
-            moodList.slice(0, 7).reduce((sum, m) => sum + m.moodLevel, 0) / Math.min(7, moodList.length)
+            sortedMoods.slice(0, 7).reduce((sum, m) => sum + m.moodLevel, 0) / Math.min(7, sortedMoods.length)
           )
           const trend = recentAvg > avgMood ? 'improving' : recentAvg < avgMood ? 'declining' : 'stable'
 
@@ -86,9 +89,18 @@ export default function DashboardPage() {
     loadUserData()
   }, [])
 
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1024px)')
+    const updateSidebar = () => setShowSidebar(!media.matches)
+    updateSidebar()
+    media.addEventListener('change', updateSidebar)
+    return () => media.removeEventListener('change', updateSidebar)
+  }, [])
+
   const chartData = useMemo(() => {
     if (moodEntries.length === 0) return []
-    return moodEntries.slice(0, 14).reverse().map((entry, i) => ({
+    const sortedEntries = [...moodEntries].sort((a, b) => new Date(b.date) - new Date(a.date))
+    return sortedEntries.slice(0, 14).reverse().map((entry, i) => ({
       day: i + 1,
       mood: entry.moodLevel,
       label: entry.moodLabel,
@@ -116,9 +128,12 @@ export default function DashboardPage() {
   }, [moodEntries])
 
   const lineDims = useMemo(() => {
-    const width = 420
-    const height = 180
-    const margin = 20
+    const width = 320
+    const height = 150
+    const margin = 18
+    if (chartData.length === 0) {
+      return { width, height, margin, step: 0, yScale: 0, points: '' }
+    }
     const step = chartData.length > 1 ? (width - margin * 2) / (chartData.length - 1) : 0
     const yScale = (height - margin * 2) / Math.max(maxMood, 1)
     const points = chartData.map((d, i) => {
@@ -135,7 +150,150 @@ export default function DashboardPage() {
     : moodStats.trend === 'declining'
     ? 'bg-rose-100 text-rose-700'
     : 'bg-amber-100 text-amber-700'
-  const nextBooking = bookings[0]
+  const trendMeta = moodStats.trend === 'improving'
+    ? { label: 'Upward', Icon: TrendingUp, className: 'text-emerald-600' }
+    : moodStats.trend === 'declining'
+    ? { label: 'Downward', Icon: TrendingDown, className: 'text-rose-600' }
+    : { label: 'Neutral', Icon: Minus, className: 'text-amber-600' }
+
+  const riskData = useMemo(() => (
+    [...moodEntries]
+      .filter((m) => m.moodLevel <= 3)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5)
+      .map((m) => ({
+        id: m.id,
+        date: m.date,
+        mood: m.moodLevel,
+        label: m.moodLabel,
+        note: m.notes,
+      }))
+  ), [moodEntries])
+
+  const bookingSummary = useMemo(() => {
+    const total = bookings.length
+    const now = new Date()
+    const upcoming = bookings.filter((booking) => {
+      if (!booking.bookingDate) return false
+      const bookingDate = new Date(booking.bookingDate)
+      if (Number.isNaN(bookingDate.getTime())) return false
+      return bookingDate >= now && booking.status !== 'cancelled'
+    }).length
+
+    const counts = bookings.reduce((acc, booking) => {
+      const status = booking.status || 'pending'
+      acc[status] = (acc[status] || 0) + 1
+      return acc
+    }, {})
+
+    const breakdown = Object.entries(counts)
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count)
+
+    if (breakdown.length === 0) {
+      breakdown.push(
+        { status: 'confirmed', count: 0 },
+        { status: 'pending', count: 0 },
+        { status: 'cancelled', count: 0 }
+      )
+    }
+
+    return { total, upcoming, breakdown }
+  }, [bookings])
+
+  const upcomingBookings = useMemo(() => {
+    const now = new Date()
+    return bookings
+      .map((booking) => {
+        if (!booking.bookingDate) return null
+        const bookingDate = new Date(booking.bookingDate)
+        if (Number.isNaN(bookingDate.getTime())) return null
+        return { ...booking, bookingDate }
+      })
+      .filter(Boolean)
+      .filter((booking) => booking.bookingDate >= now && !['cancelled', 'completed'].includes(booking.status))
+      .sort((a, b) => a.bookingDate - b.bookingDate)
+      .slice(0, 3)
+  }, [bookings])
+
+  const formatBookingDate = (value) =>
+    value.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    })
+
+  const bookingStatusStyle = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return 'bg-emerald-100 text-emerald-700'
+      case 'pending':
+        return 'bg-amber-100 text-amber-700'
+      case 'completed':
+        return 'bg-slate-100 text-slate-600'
+      case 'cancelled':
+        return 'bg-rose-100 text-rose-700'
+      default:
+        return 'bg-slate-100 text-slate-600'
+    }
+  }
+
+  const riskSummary = useMemo(() => {
+    const recentEntries = moodEntries.slice(0, 7)
+    if (recentEntries.length === 0) {
+      return { level: 'Unknown', className: 'bg-slate-100 text-slate-600', average: null }
+    }
+    const average = recentEntries.reduce((sum, entry) => sum + entry.moodLevel, 0) / recentEntries.length
+    if (average <= 3) {
+      return { level: 'High', className: 'bg-rose-100 text-rose-700', average: Math.round(average) }
+    }
+    if (average <= 5) {
+      return { level: 'Medium', className: 'bg-amber-100 text-amber-700', average: Math.round(average) }
+    }
+    return { level: 'Low', className: 'bg-emerald-100 text-emerald-700', average: Math.round(average) }
+  }, [moodEntries])
+
+  const recentRiskIndicators = useMemo(() => riskData.slice(0, 3), [riskData])
+
+  const improvementIndicators = useMemo(() => {
+    const improvements = moodEntries
+      .filter((entry) => entry.improvement)
+      .slice(0, 3)
+      .map((entry) => ({
+        label: entry.improvement,
+        detail: new Date(entry.date).toLocaleDateString(),
+      }))
+
+    if (improvements.length > 0) return improvements
+
+    const now = new Date()
+    const weekAgo = new Date(now)
+    weekAgo.setDate(now.getDate() - 6)
+
+    const weekEntries = moodEntries.filter((entry) => new Date(entry.date) >= weekAgo)
+    const notesCount = moodEntries.filter((entry) => entry.notes).length
+    const steadyEntries = moodEntries.filter((entry) => entry.moodLevel >= 6).length
+
+    return [
+      { label: 'Check-ins this week', detail: `${weekEntries.length}/7 logged` },
+      { label: 'Positive moments', detail: `${steadyEntries} entries above 6` },
+      { label: 'Reflection notes', detail: `${notesCount} saved` },
+    ]
+  }, [moodEntries])
+
+  const displayName = useMemo(() => {
+    if (!user) return 'Patient'
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
+    if (fullName) return fullName
+    if (user.email) return user.email.split('@')[0]
+    return 'Patient'
+  }, [user])
+
+  const moodDeltaLabel = moodStats.improvement > 0
+    ? `Up ${moodStats.improvement}`
+    : moodStats.improvement < 0
+    ? `Down ${Math.abs(moodStats.improvement)}`
+    : 'No change'
 
   if (loading) {
     return (
@@ -159,174 +317,229 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute top-32 left-[-10%] h-96 w-96 rounded-full bg-[rgba(91,139,245,0.16)] blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-[-20%] h-96 w-96 rounded-full bg-[rgba(251,113,133,0.12)] blur-3xl" />
 
-      <div className="relative mx-auto max-w-6xl px-4 py-10 lg:px-6">
-        <div className={`${cardBase} relative overflow-hidden p-8 animate-fade-in-up`}>
-          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -left-20 top-12 h-40 w-40 rounded-full bg-blue-200/50 blur-3xl" />
-          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-500">MindCare Dashboard</p>
-              <h1 className="mt-3 text-4xl font-bold" style={{ color: 'var(--dashboard-text-primary)' }}>
-                Welcome back,{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500">
-                  {user?.firstName}
-                </span>
-              </h1>
-              <p className="mt-2 text-slate-600">
-                Track your mental health journey and stay connected with support.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/chatbot"
-                className="rounded-xl bg-gradient-to-r from-blue-600 to-emerald-500 px-5 py-3 text-sm font-semibold text-white shadow-soft-2 transition hover:-translate-y-0.5"
+      <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-6 lg:px-6">
+        <header className="mb-6 rounded-3xl border border-white/70 bg-white/90 px-4 py-4 shadow-soft-2 backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowSidebar((prev) => !prev)}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/70 bg-white/80 text-slate-700 shadow-soft-1 transition hover:-translate-y-0.5"
+                aria-label={showSidebar ? 'Hide sidebar' : 'Show sidebar'}
               >
-                Log Mood
-              </Link>
-              <Link
-                href="/psychiatrists"
-                className="rounded-xl border border-white/70 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 shadow-soft-1 transition hover:-translate-y-0.5"
-              >
-                Book Session
-              </Link>
+                {showSidebar ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </button>
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-slate-500">MindCare AI</p>
+                <h1 className="text-2xl font-bold text-slate-900">Patient Dashboard</h1>
+              </div>
             </div>
-          </div>
-          <div className="relative mt-6 flex flex-wrap gap-3 text-sm text-slate-600">
-            <span className="rounded-full border border-white/70 bg-white/80 px-4 py-2">
-              {moodEntries.length} entries this month
-            </span>
-            <span className="rounded-full border border-white/70 bg-white/80 px-4 py-2">
-              {healthData.length} conditions tracked
-            </span>
-            <span className="rounded-full border border-white/70 bg-white/80 px-4 py-2">
-              {bookings.length > 0 ? 'Next session scheduled' : 'No sessions scheduled'}
-            </span>
-          </div>
-        </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.7fr_1fr]">
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className={`${cardBase} p-6 animate-fade-in-up`} style={{ animationDelay: '0.05s' }}>
-                <div className="flex items-start justify-between">
+            <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-500">
+              <Link href="/dashboard" className="transition hover:text-slate-900">Overview</Link>
+              <Link href="/psychiatrists" className="transition hover:text-slate-900">Bookings</Link>
+              <Link href="/dashboard" className="transition hover:text-slate-900">Mood</Link>
+              <Link href="/resources" className="transition hover:text-slate-900">Health</Link>
+            </nav>
+
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2 text-sm text-slate-600">
+                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                Welcome, {displayName}
+              </div>
+              <Link
+                href="/resources"
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-soft-2 transition hover:-translate-y-0.5"
+              >
+                Resources
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        {showSidebar && (
+          <button
+            type="button"
+            onClick={() => setShowSidebar(false)}
+            className="lg:hidden fixed inset-0 z-30 bg-slate-900/30 backdrop-blur-sm"
+            aria-label="Close sidebar overlay"
+          />
+        )}
+
+        <div className="flex flex-col gap-6 lg:flex-row">
+          {showSidebar && (
+            <aside className="fixed left-4 top-28 z-40 w-[min(92vw,20rem)] lg:static lg:left-auto lg:top-auto lg:z-auto lg:w-80 lg:shrink-0">
+              <Sidebar
+                chartData={chartData}
+                lineDims={lineDims}
+                userGrowthData={userGrowthData}
+                moodEntries={moodEntries}
+                healthData={healthData}
+                improvementIndicators={improvementIndicators}
+              />
+            </aside>
+          )}
+
+          <section className="flex-1 space-y-6">
+            <div className="grid gap-6 xl:grid-cols-3">
+              <div className={`${cardBase} p-6 xl:col-span-2`}>
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Overall Mood</p>
-                    <p className="mt-3 text-4xl font-bold" style={{ color: 'var(--dashboard-text-primary)' }}>
-                      {moodStats.average}/10
-                    </p>
-                    <p className="text-sm text-slate-500">Based on {moodEntries.length} entries</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Bookings Summary</p>
+                    <p className="mt-2 text-lg font-semibold text-slate-900">Sessions at a glance</p>
                   </div>
-                  <div className="rounded-2xl bg-blue-500/10 p-3 text-blue-600">
-                    <Heart className="h-6 w-6" />
+                  <div className="rounded-2xl bg-emerald-100/70 p-2 text-emerald-700">
+                    <Calendar className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="mt-4 flex items-center gap-3">
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Total bookings</p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-900">{bookingSummary.total}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Upcoming bookings</p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-900">{bookingSummary.upcoming}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Status breakdown</p>
+                    <Link href="/psychiatrists" className="text-xs font-semibold text-blue-600 hover:text-blue-700">
+                      Manage bookings
+                    </Link>
+                  </div>
+                  <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200/70">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50/80 text-left text-slate-500">
+                        <tr>
+                          <th className="px-4 py-2">Status</th>
+                          <th className="px-4 py-2 text-right">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bookingSummary.breakdown.map((row) => (
+                          <tr key={row.status} className="border-t border-slate-200/70">
+                            <td className="px-4 py-2 capitalize text-slate-700">{row.status}</td>
+                            <td className="px-4 py-2 text-right font-semibold text-slate-900">{row.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Upcoming sessions</p>
+                    <span className="text-xs text-slate-400">Next 3</span>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {upcomingBookings.length > 0 ? upcomingBookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-3 text-sm"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {booking.psychiatristName || 'Psychiatrist'}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatBookingDate(booking.bookingDate)} · {booking.timeSlot || 'Time TBD'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${bookingStatusStyle(booking.status)}`}>
+                            {booking.status || 'pending'}
+                          </span>
+                          {booking.psychiatristId && (
+                            <Link
+                              href={`/psychiatrists/${booking.psychiatristId}`}
+                              className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                            >
+                              View
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-3 text-sm text-slate-500">
+                        No upcoming sessions scheduled yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className={`${cardBase} p-6`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Mood Summary</p>
+                    <p className="mt-2 text-3xl font-semibold text-slate-900">{moodStats.average}/10</p>
+                    <p className="text-sm text-slate-500">Average mood score</p>
+                  </div>
+                  <div className="rounded-2xl bg-rose-100/70 p-2 text-rose-600">
+                    <Heart className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${trendPill}`}>
                     {moodStats.trend.charAt(0).toUpperCase() + moodStats.trend.slice(1)}
                   </span>
-                  {moodStats.improvement !== 0 && (
-                    <span className={`text-sm font-semibold ${moodStats.improvement > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {moodStats.improvement > 0 ? '+' : ''}
-                      {moodStats.improvement}
-                    </span>
+                  <div className="flex items-center gap-1 text-xs text-slate-600">
+                    <trendMeta.Icon className={`h-4 w-4 ${trendMeta.className}`} />
+                    <span>{trendMeta.label} trend</span>
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-slate-500">{moodDeltaLabel} vs baseline</p>
+              </div>
+
+              <div className={`${cardBase} p-6 xl:col-span-3`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Risk Data Summary</p>
+                    <p className="mt-2 text-lg font-semibold text-slate-900">Current risk level</p>
+                  </div>
+                  <div className="rounded-2xl bg-rose-100/70 p-2 text-rose-600">
+                    <AlertCircle className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${riskSummary.className}`}>
+                    {riskSummary.level}
+                  </span>
+                  {riskSummary.average !== null && (
+                    <p className="text-sm text-slate-500">Avg mood last 7 days: {riskSummary.average}/10</p>
                   )}
                 </div>
-              </div>
 
-              <div className={`${cardBase} p-6 animate-fade-in-up`} style={{ animationDelay: '0.1s' }}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Health Conditions</p>
-                    <p className="mt-3 text-4xl font-bold" style={{ color: 'var(--dashboard-text-primary)' }}>
-                      {healthData.length}
-                    </p>
-                    <p className="text-sm text-slate-500">Tracked conditions</p>
-                  </div>
-                  <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-600">
-                    <AlertCircle className="h-6 w-6" />
-                  </div>
-                </div>
-                <p className="mt-4 text-sm text-slate-500">
-                  {healthData.length > 0 ? 'Monitoring your health insights.' : 'Add a condition to start tracking.'}
-                </p>
-              </div>
-
-              <div className={`${cardBase} p-6 animate-fade-in-up`} style={{ animationDelay: '0.15s' }}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Next Appointment</p>
-                    <p className="mt-3 text-2xl font-semibold" style={{ color: 'var(--dashboard-text-primary)' }}>
-                      {nextBooking ? (nextBooking.psychiatristName || `Dr. ${nextBooking.psychiatristId}`) : 'No visits'}
-                    </p>
-                    {nextBooking ? (
-                      <div className="mt-2 text-sm text-slate-500">
-                        <span className="block">{new Date(nextBooking.bookingDate).toLocaleDateString()}</span>
-                        <span className="block">{nextBooking.timeSlot}</span>
+                <div className="mt-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Recent risk indicators</p>
+                  <div className="mt-2 space-y-2">
+                    {recentRiskIndicators.length > 0 ? recentRiskIndicators.map((risk) => (
+                      <div
+                        key={risk.id}
+                        className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-2 text-sm"
+                      >
+                        <div>
+                          <p className="font-semibold capitalize text-slate-700">{risk.label}</p>
+                          <p className="text-xs text-slate-500">{new Date(risk.date).toLocaleDateString()}</p>
+                        </div>
+                        <span className="rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-600">
+                          {risk.mood}/10
+                        </span>
                       </div>
-                    ) : (
-                      <p className="mt-2 text-sm text-slate-500">No appointments scheduled yet.</p>
+                    )) : (
+                      <p className="text-sm text-slate-500">No recent risk indicators.</p>
                     )}
                   </div>
-                  <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-600">
-                    <Calendar className="h-6 w-6" />
-                  </div>
                 </div>
-                {nextBooking ? (
-                  <span className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${
-                    nextBooking.status === 'confirmed'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : nextBooking.status === 'pending'
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-slate-100 text-slate-700'
-                  }`}>
-                    {nextBooking.status}
-                  </span>
-                ) : (
-                  <Link
-                    href="/psychiatrists"
-                    className="mt-4 inline-flex rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-soft-1 transition hover:-translate-y-0.5"
-                  >
-                    Book Now
-                  </Link>
-                )}
               </div>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <Link
-                href="/chatbot"
-                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-emerald-500 p-5 text-white shadow-soft-2 transition hover:-translate-y-1"
-              >
-                <p className="font-semibold text-lg">Chat with AI Support</p>
-                <p className="text-sm text-white/80 mt-1">Get instant mental health guidance</p>
-              </Link>
-
-              <Link
-                href="/psychiatrists"
-                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-amber-400 p-5 text-white shadow-soft-2 transition hover:-translate-y-1"
-              >
-                <p className="font-semibold text-lg">Browse Psychiatrists</p>
-                <p className="text-sm text-white/80 mt-1">Connect with mental health experts</p>
-              </Link>
-
-              <Link
-                href="/resources"
-                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white shadow-soft-2 transition hover:-translate-y-1"
-              >
-                <p className="font-semibold text-lg">Wellness Resources</p>
-                <p className="text-sm text-white/80 mt-1">Explore mental health tools</p>
-              </Link>
-            </div>
-          </div>
-
-          <Sidebar
-            chartData={chartData}
-            maxMood={maxMood}
-            lineDims={lineDims}
-            userGrowthData={userGrowthData}
-            moodEntries={moodEntries}
-            healthData={healthData}
-          />
+          </section>
         </div>
       </div>
     </div>

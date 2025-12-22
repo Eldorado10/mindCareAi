@@ -222,7 +222,7 @@ export default function BookingForm({
     <div className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-lg text-neutral-800">
       <h3 className="text-2xl font-bold text-neutral-900 mb-2">Book an Appointment</h3>
       <p className="text-sm text-neutral-500 mb-6">
-        with <span className="font-semibold text-primary">{psychiatristName}</span>
+        with <span className="font-semibold text-blue-600">{psychiatristName}</span>
       </p>
 
       {profileLoading && (
@@ -372,7 +372,7 @@ export default function BookingForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 py-3 rounded-xl font-semibold text-white shadow-soft-2 transition hover:-translate-y-0.5 hover:shadow-soft-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
