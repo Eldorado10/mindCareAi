@@ -14,11 +14,13 @@ import {
   UserCheck,
   UserX,
   Database,
+  ShieldAlert,
 } from 'lucide-react'
 import UserFormModal from '@/app/components/Admin/UserFormModal'
 import UsersTable from '@/app/components/Admin/UsersTable'
 import PsychiatristFormModal from '@/app/components/Admin/PsychiatristFormModal'
 import PsychiatristsTable from '@/app/components/Admin/PsychiatristsTable'
+import EmergencyTeamForm from '@/app/components/Admin/EmergencyTeamForm'
 import Toast from '@/app/components/Admin/Toast'
 import ConfirmDialog from '@/app/components/Admin/ConfirmDialog'
 import {
@@ -30,6 +32,8 @@ import {
   createPsychiatrist,
   updatePsychiatrist,
   deletePsychiatrist,
+  fetchEmergencyTeamAdmin,
+  saveEmergencyTeamAdmin,
 } from '@/lib/api-client'
 import { useRouter } from 'next/navigation'
 
@@ -54,6 +58,9 @@ export default function AdminDashboard() {
   })
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [dbStatus, setDbStatus] = useState('checking')
+  const [emergencyTeam, setEmergencyTeam] = useState(null)
+  const [emergencyTeamLoading, setEmergencyTeamLoading] = useState(false)
+  const [emergencyTeamSaving, setEmergencyTeamSaving] = useState(false)
 
   const tabs = [
     { id: 'all', label: 'All Users', icon: Users },
@@ -61,6 +68,7 @@ export default function AdminDashboard() {
     { id: 'researcher', label: 'Researchers', icon: Microscope },
     { id: 'data-scientist', label: 'Data Scientists', icon: FlaskConical },
     { id: 'psychiatrist', label: 'Psychiatrists', icon: Stethoscope },
+    { id: 'emergency-team', label: 'Emergency Team', icon: ShieldAlert },
   ]
 
   // Check database connection on mount
@@ -87,6 +95,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'psychiatrist') {
       fetchPsychiatristsList()
+    } else if (activeTab === 'emergency-team') {
+      setSearchQuery('')
+      fetchEmergencyTeam()
     } else {
       fetchUsers()
     }
@@ -133,6 +144,45 @@ export default function AdminDashboard() {
       setPsychiatrists([])
     } finally {
       setPsychiatristsLoading(false)
+    }
+  }
+
+  const fetchEmergencyTeam = async () => {
+    setEmergencyTeamLoading(true)
+    try {
+      const data = await fetchEmergencyTeamAdmin()
+      if (data?.team) {
+        setEmergencyTeam(data.team)
+      } else if (data && !data.error) {
+        setEmergencyTeam(data)
+      } else {
+        setEmergencyTeam(null)
+      }
+    } catch (error) {
+      console.error('[UI] Fetch emergency team error:', error)
+      showToast(error.message || 'Failed to fetch emergency team', 'error')
+      setEmergencyTeam(null)
+    } finally {
+      setEmergencyTeamLoading(false)
+    }
+  }
+
+  const handleEmergencyTeamSubmit = async (payload) => {
+    setEmergencyTeamSaving(true)
+    try {
+      const data = await saveEmergencyTeamAdmin(payload)
+      if (data?.team) {
+        setEmergencyTeam(data.team)
+      } else if (data && !data.error) {
+        setEmergencyTeam(data)
+      }
+      showToast('Emergency team saved successfully', 'success')
+    } catch (error) {
+      console.error('[UI] Emergency team save error:', error)
+      showToast(error.message || 'Failed to save emergency team', 'error')
+      throw error
+    } finally {
+      setEmergencyTeamSaving(false)
     }
   }
 
@@ -241,6 +291,7 @@ export default function AdminDashboard() {
   }
 
   const isPsychiatristTab = activeTab === 'psychiatrist'
+  const isEmergencyTeamTab = activeTab === 'emergency-team'
   const activeTabLabel = tabs.find((tab) => tab.id === activeTab)?.label || 'Users'
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -341,28 +392,30 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                <div className="relative flex-1 min-w-[220px] lg:min-w-[280px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Escape') setSearchQuery('')
-                    }}
-                    placeholder={searchPlaceholder}
-                    className="w-full pl-10 pr-10 py-2 rounded-xl border border-white/70 bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-700"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+                {!isEmergencyTeamTab && (
+                  <div className="relative flex-1 min-w-[220px] lg:min-w-[280px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
+                    <input
+                      type="search"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') setSearchQuery('')
+                      }}
+                      placeholder={searchPlaceholder}
+                      className="w-full pl-10 pr-10 py-2 rounded-xl border border-white/70 bg-white/70 text-slate-700 shadow-soft-1 outline-none transition focus:ring-2 focus:ring-blue-500/40"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-700"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <button className="flex items-center gap-3 pl-3 pr-2 py-2 rounded-2xl border border-white/70 bg-white/70 shadow-soft-1 transition hover:shadow-soft-2">
                   <div>
@@ -387,7 +440,50 @@ export default function AdminDashboard() {
         </div>
 
         <main className="px-4 py-8 sm:px-6 lg:px-8">
-          {isPsychiatristTab ? (
+          {isEmergencyTeamTab ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 mb-8">
+              <div className="glass rounded-2xl p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Active Team</p>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <p className="text-2xl font-bold text-slate-900">
+                    {emergencyTeam?.name || (emergencyTeamLoading ? 'Loading...' : 'Not set')}
+                  </p>
+                  <p className="text-sm text-slate-500">{emergencyTeam?.region || 'Bangladesh'}</p>
+                </div>
+              </div>
+
+              <div className="glass rounded-2xl p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</p>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                    <Users className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-1 text-sm text-slate-600">
+                  <div>{emergencyTeam?.phone || 'Phone not set'}</div>
+                  <div>{emergencyTeam?.email || 'Email not set'}</div>
+                </div>
+              </div>
+
+              <div className="glass rounded-2xl p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Database</p>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+                    <Database className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <p className="text-lg font-semibold text-slate-900">Status</p>
+                  <span className={dbStatusBadge}>{dbStatusLabel}</span>
+                </div>
+              </div>
+            </div>
+          ) : isPsychiatristTab ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-8">
               <div className="glass rounded-2xl p-5">
                 <div className="flex items-center justify-between">
@@ -522,49 +618,74 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <div className="glass rounded-3xl overflow-hidden">
-            <div className="flex flex-wrap justify-between items-center gap-4 p-6 border-b border-white/60">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">{activeTabLabel}</h2>
-                <p className="text-sm text-slate-500">
-                  {isFiltering ? `${filteredCount} of ${totalCount}` : totalCount}{' '}
-                  {tableEntityLabel}
-                  {filteredCount !== 1 ? 's' : ''} found
-                </p>
+          {isEmergencyTeamTab ? (
+            <div className="glass rounded-3xl overflow-hidden">
+              <div className="flex flex-wrap justify-between items-center gap-4 p-6 border-b border-white/60">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Emergency Team</h2>
+                  <p className="text-sm text-slate-500">
+                    Update the contact details shown in crisis guidance and the chatbox.
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={isPsychiatristTab ? handleAddPsychiatrist : handleAddUser}
-                className="flex items-center gap-2 px-6 py-3 text-white rounded-xl transition hover:-translate-y-0.5 font-medium bg-gradient-to-r from-blue-600 to-emerald-500 shadow-soft-2"
-              >
-                <Plus size={18} />
-                Add {addButtonLabel}
-              </button>
-            </div>
 
-            <div className="p-6">
-              {isPsychiatristTab ? (
-                <PsychiatristsTable
-                  psychiatrists={filteredPsychiatrists}
-                  onEdit={handleEditPsychiatrist}
-                  onDelete={(id, name) => handleDeleteClick(id, name, 'psychiatrist')}
-                  isLoading={psychiatristsLoading}
-                  emptyMessage={isFiltering ? 'No matches for this search' : 'No psychiatrists found'}
-                />
-              ) : (
-                <UsersTable
-                  users={filteredUsers}
-                  onEdit={handleEditUser}
-                  onDelete={handleDeleteClick}
-                  isLoading={usersLoading}
-                  emptyMessage={isFiltering ? 'No matches for this search' : 'No users found'}
-                />
-              )}
+              <div className="p-6">
+                {emergencyTeamLoading ? (
+                  <div className="text-sm text-slate-500">Loading emergency team...</div>
+                ) : (
+                  <EmergencyTeamForm
+                    team={emergencyTeam}
+                    onSubmit={handleEmergencyTeamSubmit}
+                    isSaving={emergencyTeamSaving}
+                  />
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="glass rounded-3xl overflow-hidden">
+              <div className="flex flex-wrap justify-between items-center gap-4 p-6 border-b border-white/60">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">{activeTabLabel}</h2>
+                  <p className="text-sm text-slate-500">
+                    {isFiltering ? `${filteredCount} of ${totalCount}` : totalCount}{' '}
+                    {tableEntityLabel}
+                    {filteredCount !== 1 ? 's' : ''} found
+                  </p>
+                </div>
+                <button
+                  onClick={isPsychiatristTab ? handleAddPsychiatrist : handleAddUser}
+                  className="flex items-center gap-2 px-6 py-3 text-white rounded-xl transition hover:-translate-y-0.5 font-medium bg-gradient-to-r from-blue-600 to-emerald-500 shadow-soft-2"
+                >
+                  <Plus size={18} />
+                  Add {addButtonLabel}
+                </button>
+              </div>
+
+              <div className="p-6">
+                {isPsychiatristTab ? (
+                  <PsychiatristsTable
+                    psychiatrists={filteredPsychiatrists}
+                    onEdit={handleEditPsychiatrist}
+                    onDelete={(id, name) => handleDeleteClick(id, name, 'psychiatrist')}
+                    isLoading={psychiatristsLoading}
+                    emptyMessage={isFiltering ? 'No matches for this search' : 'No psychiatrists found'}
+                  />
+                ) : (
+                  <UsersTable
+                    users={filteredUsers}
+                    onEdit={handleEditUser}
+                    onDelete={handleDeleteClick}
+                    isLoading={usersLoading}
+                    emptyMessage={isFiltering ? 'No matches for this search' : 'No users found'}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
-      {!isPsychiatristTab && (
+      {!isPsychiatristTab && !isEmergencyTeamTab && (
         <UserFormModal
           isOpen={isUserFormOpen}
           onClose={() => {
